@@ -403,6 +403,15 @@ HelixIsland_EventScript_DevKit::
 	faceplayer
 	msgbox HelixIsland_Text_DevKitOffer, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, HelixIsland_EventScript_DevKitDecline
+	@ All 8 badges so the level 100 mon obeys
+	setflag FLAG_BADGE01_GET
+	setflag FLAG_BADGE02_GET
+	setflag FLAG_BADGE03_GET
+	setflag FLAG_BADGE04_GET
+	setflag FLAG_BADGE05_GET
+	setflag FLAG_BADGE06_GET
+	setflag FLAG_BADGE07_GET
+	setflag FLAG_BADGE08_GET
 	givemon SPECIES_NUZLEAF, 100, move1=MOVE_FALSE_SWIPE, move2=MOVE_LEAF_BLADE
 	goto_if_eq VAR_RESULT, MON_GIVEN_TO_PARTY, HelixIsland_EventScript_DevKitParty
 	goto_if_eq VAR_RESULT, MON_GIVEN_TO_PC, HelixIsland_EventScript_DevKitPC

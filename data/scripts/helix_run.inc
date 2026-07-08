@@ -183,7 +183,7 @@ HelixRun_Text_MonGrew:
 	.string "What reward do you want?$"
 
 HelixRun_Text_StatRose:
-	.string "{STR_VAR_1}'s {STR_VAR_2} rose!$"
+	.string "{STR_VAR_1}'s {STR_VAR_2} increased!$"
 
 HelixRun_Text_MonsLost:
 	.string "Some of your POKéMON were lost\n"
