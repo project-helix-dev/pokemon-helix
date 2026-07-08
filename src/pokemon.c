@@ -25,6 +25,7 @@
 #include "follower_npc.h"
 #include "frontier_util.h"
 #include "graphics.h"
+#include "helix_run.h"
 #include "item.h"
 #include "link.h"
 #include "m4a.h"
@@ -1227,7 +1228,7 @@ STATIC_ASSERT(ARRAY_COUNT(sCompressedStatuses) <= (1 << 4), PokemonSubstruct3_co
 STATIC_ASSERT(MAX_LEVEL < (1 << 7), PokemonSubstruct3_metLevel_TooSmall);
 STATIC_ASSERT(NUM_VERSIONS < (1 << 4), PokemonSubstruct3_metGame_TooSmall);
 STATIC_ASSERT(MAX_DYNAMAX_LEVEL < (1 << 4), PokemonSubstruct3_dynamaxLevel_TooSmall);
-STATIC_ASSERT(MAX_PER_STAT_IVS < (1 << 5), PokemonSubstruct3_ivs_TooSmall);
+STATIC_ASSERT(MAX_PER_STAT_IVS < (1 << 8), PokemonSubstruct2_ivs_TooSmall); // Helix: IVs stored as u8 in substruct2
 STATIC_ASSERT(NUM_NATURES <= (1 << 5), BoxPokemon_hiddenNatureModifier_TooSmall);
 
 static u32 CompressStatus(u32 status)
@@ -1319,7 +1320,7 @@ void CreateMonWithIVs(struct Pokemon *mon, u16 species, u8 level, u32 personalit
 
 void SetBoxMonIVs(struct BoxPokemon *mon, u8 fixedIV)
 {
-    u32 i, value;
+    u32 i;
     enum Stat availableIVs[NUM_STATS];
     enum Stat selectedIvs[NUM_STATS];
 
@@ -1330,26 +1331,15 @@ void SetBoxMonIVs(struct BoxPokemon *mon, u8 fixedIV)
         return;
     }
 
+    // Helix: generate random IVs in [0, MAX_PER_STAT_IVS] range
     u32 iv;
-    u32 ivRandom = Random32();
     u32 species = GetBoxMonData(mon, MON_DATA_SPECIES);
-    value = (u16)ivRandom;
 
-    iv = value & MAX_IV_MASK;
-    SetBoxMonData(mon, MON_DATA_HP_IV, &iv);
-    iv = (value & (MAX_IV_MASK << 5)) >> 5;
-    SetBoxMonData(mon, MON_DATA_ATK_IV, &iv);
-    iv = (value & (MAX_IV_MASK << 10)) >> 10;
-    SetBoxMonData(mon, MON_DATA_DEF_IV, &iv);
-
-    value = (u16)(ivRandom >> 16);
-
-    iv = value & MAX_IV_MASK;
-    SetBoxMonData(mon, MON_DATA_SPEED_IV, &iv);
-    iv = (value & (MAX_IV_MASK << 5)) >> 5;
-    SetBoxMonData(mon, MON_DATA_SPATK_IV, &iv);
-    iv = (value & (MAX_IV_MASK << 10)) >> 10;
-    SetBoxMonData(mon, MON_DATA_SPDEF_IV, &iv);
+    for (i = 0; i < NUM_STATS; i++)
+    {
+        iv = Random() % (MAX_PER_STAT_IVS + 1);
+        SetBoxMonData(mon, MON_DATA_HP_IV + i, &iv);
+    }
 
     if (gSpeciesInfo[species].perfectIVCount != 0)
     {
@@ -1810,39 +1800,22 @@ void CalculateMonStats(struct Pokemon *mon)
 
     SetMonData(mon, MON_DATA_LEVEL, &level);
 
-    bool32 hyperTrained[NUM_STATS]; //In a battle test, hyper training flag indicates a fixed stat
     s32 iv[NUM_STATS];
-    s32 ev[NUM_STATS];
     for (u32 i = 0; i < NUM_STATS; i++)
     {
-        hyperTrained[i] = GetMonData(mon, MON_DATA_HYPER_TRAINED_HP + i);
         iv[i] = GetMonData(mon, MON_DATA_HP_IV + i);
-        ev[i] = GetMonData(mon, MON_DATA_HP_EV + i);
-
-        if (hyperTrained[i])
-        {
-        #if TESTING
-            if (gMain.inBattle)
-                continue;
-        #endif
-            iv[i] = MAX_PER_STAT_IVS;
-        }
 
         if (i == STAT_HP)
             continue;
 
         u8 baseStat = GetSpeciesBaseStat(species, i);
-        s32 n = (((2 * baseStat + iv[i] + ev[i] / 4) * level) / 100) + 5;
+        // Helix: EVs removed from formula
+        s32 n = (((2 * baseStat + iv[i]) * level) / 100) + 5;
         n = ModifyStatByNature(nature, n, i);
         if (B_FRIENDSHIP_BOOST == TRUE)
             n = n + ((n * 10 * friendship) / (MAX_FRIENDSHIP * 100));
         SetMonData(mon, MON_DATA_MAX_HP + i, &n);
     }
-
-#if TESTING
-    if (hyperTrained[STAT_HP] && gMain.inBattle)
-        return;
-#endif
 
     if (species == SPECIES_SHEDINJA)
     {
@@ -1850,8 +1823,9 @@ void CalculateMonStats(struct Pokemon *mon)
     }
     else
     {
+        // Helix: EVs removed from HP formula
         s32 n = 2 * GetSpeciesBaseHP(species) + iv[STAT_HP];
-        newMaxHP = (((n + ev[STAT_HP] / 4) * level) / 100) + level + 10;
+        newMaxHP = ((n * level) / 100) + level + 10;
     }
 
     gBattleScripting.levelUpHP = newMaxHP - oldMaxHP;
@@ -2623,23 +2597,14 @@ u32 GetBoxMonData3(struct BoxPokemon *boxMon, s32 field, u8 *data)
         case MON_DATA_PP4:
             retVal = GetSubstruct1(boxMon)->pp4;
             break;
+        // Helix: EVs disabled — always return 0
         case MON_DATA_HP_EV:
-            retVal = GetSubstruct2(boxMon)->hpEV;
-            break;
         case MON_DATA_ATK_EV:
-            retVal = GetSubstruct2(boxMon)->attackEV;
-            break;
         case MON_DATA_DEF_EV:
-            retVal = GetSubstruct2(boxMon)->defenseEV;
-            break;
         case MON_DATA_SPEED_EV:
-            retVal = GetSubstruct2(boxMon)->speedEV;
-            break;
         case MON_DATA_SPATK_EV:
-            retVal = GetSubstruct2(boxMon)->spAttackEV;
-            break;
         case MON_DATA_SPDEF_EV:
-            retVal = GetSubstruct2(boxMon)->spDefenseEV;
+            retVal = 0;
             break;
         case MON_DATA_COOL:
             retVal = GetSubstruct2(boxMon)->cool;
@@ -2683,23 +2648,24 @@ u32 GetBoxMonData3(struct BoxPokemon *boxMon, s32 field, u8 *data)
         case MON_DATA_OT_GENDER:
             retVal = GetSubstruct3(boxMon)->otGender;
             break;
+        // Helix: IVs stored in substruct2 (u8, 0-99)
         case MON_DATA_HP_IV:
-            retVal = GetSubstruct3(boxMon)->hpIV;
+            retVal = GetSubstruct2(boxMon)->hpIV;
             break;
         case MON_DATA_ATK_IV:
-            retVal = GetSubstruct3(boxMon)->attackIV;
+            retVal = GetSubstruct2(boxMon)->attackIV;
             break;
         case MON_DATA_DEF_IV:
-            retVal = GetSubstruct3(boxMon)->defenseIV;
+            retVal = GetSubstruct2(boxMon)->defenseIV;
             break;
         case MON_DATA_SPEED_IV:
-            retVal = GetSubstruct3(boxMon)->speedIV;
+            retVal = GetSubstruct2(boxMon)->speedIV;
             break;
         case MON_DATA_SPATK_IV:
-            retVal = GetSubstruct3(boxMon)->spAttackIV;
+            retVal = GetSubstruct2(boxMon)->spAttackIV;
             break;
         case MON_DATA_SPDEF_IV:
-            retVal = GetSubstruct3(boxMon)->spDefenseIV;
+            retVal = GetSubstruct2(boxMon)->spDefenseIV;
             break;
         case MON_DATA_IS_EGG:
             retVal = IsEggOrBadEgg(boxMon);
@@ -2768,13 +2734,14 @@ u32 GetBoxMonData3(struct BoxPokemon *boxMon, s32 field, u8 *data)
             break;
         case MON_DATA_IVS:
         {
-            struct PokemonSubstruct3 *substruct3 = GetSubstruct3(boxMon);
-            retVal = substruct3->hpIV
-                    | (substruct3->attackIV << 5)
-                    | (substruct3->defenseIV << 10)
-                    | (substruct3->speedIV << 15)
-                    | (substruct3->spAttackIV << 20)
-                    | (substruct3->spDefenseIV << 25);
+            // Helix: pack IVs from substruct2 (capped to 5 bits for legacy interface)
+            struct PokemonSubstruct2 *substruct2 = GetSubstruct2(boxMon);
+            retVal = (substruct2->hpIV & 0x1F)
+                    | ((substruct2->attackIV & 0x1F) << 5)
+                    | ((substruct2->defenseIV & 0x1F) << 10)
+                    | ((substruct2->speedIV & 0x1F) << 15)
+                    | ((substruct2->spAttackIV & 0x1F) << 20)
+                    | ((substruct2->spDefenseIV & 0x1F) << 25);
             break;
         }
         case MON_DATA_KNOWN_MOVES:
@@ -2895,6 +2862,12 @@ u32 GetBoxMonData3(struct BoxPokemon *boxMon, s32 field, u8 *data)
                     .tracker1 = substruct1->evolutionTracker1,
                     .tracker2 = substruct1->evolutionTracker2,
                 }.combinedValue;
+            }
+            break;
+        case MON_DATA_ABILITY_OVERRIDE:
+            {
+                struct PokemonSubstruct0 *substruct0 = GetSubstruct0(boxMon);
+                retVal = substruct0->abilityOverrideLo | (substruct0->abilityOverrideHi << 6);
             }
             break;
         default:
@@ -3138,23 +3111,13 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
         case MON_DATA_PP4:
             SET8(GetSubstruct1(boxMon)->pp4);
             break;
+        // Helix: EVs disabled — writes are no-ops
         case MON_DATA_HP_EV:
-            SET8(GetSubstruct2(boxMon)->hpEV);
-            break;
         case MON_DATA_ATK_EV:
-            SET8(GetSubstruct2(boxMon)->attackEV);
-            break;
         case MON_DATA_DEF_EV:
-            SET8(GetSubstruct2(boxMon)->defenseEV);
-            break;
         case MON_DATA_SPEED_EV:
-            SET8(GetSubstruct2(boxMon)->speedEV);
-            break;
         case MON_DATA_SPATK_EV:
-            SET8(GetSubstruct2(boxMon)->spAttackEV);
-            break;
         case MON_DATA_SPDEF_EV:
-            SET8(GetSubstruct2(boxMon)->spDefenseEV);
             break;
         case MON_DATA_COOL:
             SET8(GetSubstruct2(boxMon)->cool);
@@ -3198,23 +3161,24 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
         case MON_DATA_OT_GENDER:
             SET8(GetSubstruct3(boxMon)->otGender);
             break;
+        // Helix: IVs stored in substruct2 (u8, 0-99)
         case MON_DATA_HP_IV:
-            SET8(GetSubstruct3(boxMon)->hpIV);
+            SET8(GetSubstruct2(boxMon)->hpIV);
             break;
         case MON_DATA_ATK_IV:
-            SET8(GetSubstruct3(boxMon)->attackIV);
+            SET8(GetSubstruct2(boxMon)->attackIV);
             break;
         case MON_DATA_DEF_IV:
-            SET8(GetSubstruct3(boxMon)->defenseIV);
+            SET8(GetSubstruct2(boxMon)->defenseIV);
             break;
         case MON_DATA_SPEED_IV:
-            SET8(GetSubstruct3(boxMon)->speedIV);
+            SET8(GetSubstruct2(boxMon)->speedIV);
             break;
         case MON_DATA_SPATK_IV:
-            SET8(GetSubstruct3(boxMon)->spAttackIV);
+            SET8(GetSubstruct2(boxMon)->spAttackIV);
             break;
         case MON_DATA_SPDEF_IV:
-            SET8(GetSubstruct3(boxMon)->spDefenseIV);
+            SET8(GetSubstruct2(boxMon)->spDefenseIV);
             break;
         case MON_DATA_IS_EGG:
             SET8(GetSubstruct3(boxMon)->isEgg);
@@ -3279,15 +3243,16 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
             break;
         case MON_DATA_IVS:
         {
+            // Helix: unpack from legacy 5-bit format into substruct2 u8 fields
             u32 ivs;
-            struct PokemonSubstruct3 *substruct3 = GetSubstruct3(boxMon);
+            struct PokemonSubstruct2 *substruct2 = GetSubstruct2(boxMon);
             SET32(ivs);
-            substruct3->hpIV = ivs & MAX_IV_MASK;
-            substruct3->attackIV = (ivs >> 5) & MAX_IV_MASK;
-            substruct3->defenseIV = (ivs >> 10) & MAX_IV_MASK;
-            substruct3->speedIV = (ivs >> 15) & MAX_IV_MASK;
-            substruct3->spAttackIV = (ivs >> 20) & MAX_IV_MASK;
-            substruct3->spDefenseIV = (ivs >> 25) & MAX_IV_MASK;
+            substruct2->hpIV = ivs & 0x1F;
+            substruct2->attackIV = (ivs >> 5) & 0x1F;
+            substruct2->defenseIV = (ivs >> 10) & 0x1F;
+            substruct2->speedIV = (ivs >> 15) & 0x1F;
+            substruct2->spAttackIV = (ivs >> 20) & 0x1F;
+            substruct2->spDefenseIV = (ivs >> 25) & 0x1F;
             break;
         }
         case MON_DATA_HYPER_TRAINED_HP:
@@ -3327,6 +3292,15 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
             SET32(evoTracker.combinedValue);
             substruct1->evolutionTracker1 = evoTracker.tracker1;
             substruct1->evolutionTracker2 = evoTracker.tracker2;
+            break;
+        }
+        case MON_DATA_ABILITY_OVERRIDE:
+        {
+            struct PokemonSubstruct0 *substruct0 = GetSubstruct0(boxMon);
+            u32 value;
+            SET16(value);
+            substruct0->abilityOverrideLo = value & 0x3F;
+            substruct0->abilityOverrideHi = (value >> 6) & 0x7;
             break;
         }
         default:
@@ -3416,6 +3390,10 @@ u8 GiveCapturedMonToPlayer(struct Pokemon *mon)
     SetMonData(mon, MON_DATA_OT_NAME, gSaveBlock2Ptr->playerName);
     SetMonData(mon, MON_DATA_OT_GENDER, &gSaveBlock2Ptr->playerGender);
     SetMonData(mon, MON_DATA_OT_ID, gSaveBlock2Ptr->playerTrainerId);
+
+    // Helix: mons caught during a run never join the active run party
+    if (HelixIsRunActive())
+        return CopyMonToPC(mon);
 
     for (i = 0; i < PARTY_SIZE; i++)
     {
@@ -3582,6 +3560,10 @@ enum Ability GetAbilityBySpecies(u16 species, u8 abilityNum)
 
 enum Ability GetMonAbility(struct Pokemon *mon)
 {
+    u16 abilityOverride = GetMonData(mon, MON_DATA_ABILITY_OVERRIDE);
+    if (abilityOverride != ABILITY_NONE)
+        return gLastUsedAbility = abilityOverride;
+
     u16 species = GetMonData(mon, MON_DATA_SPECIES);
     u8 abilityNum = GetMonData(mon, MON_DATA_ABILITY_NUM);
     return GetAbilityBySpecies(species, abilityNum);
@@ -3857,7 +3839,7 @@ void PokemonToBattleMon(struct Pokemon *src, struct BattlePokemon *dst)
     dst->types[1] = GetSpeciesType(dst->species, 1);
     dst->types[2] = TYPE_MYSTERY;
     dst->isShiny = IsMonShiny(src);
-    dst->ability = GetAbilityBySpecies(dst->species, dst->abilityNum);
+    dst->ability = GetMonAbility(src);
     GetMonData(src, MON_DATA_NICKNAME, nickname);
     StringCopy_Nickname(dst->nickname, nickname);
     GetMonData(src, MON_DATA_OT_NAME, dst->otName);
@@ -5552,6 +5534,11 @@ s32 CalculateFriendshipBonuses(struct Pokemon *mon, s32 modifier, enum HoldEffec
 
 void MonGainEVs(struct Pokemon *mon, u16 defeatedSpecies)
 {
+    // Helix: EVs disabled entirely — no EV gain
+    (void)mon;
+    (void)defeatedSpecies;
+    return;
+#if 0 // Original EV gain code disabled
     u8 evs[NUM_STATS];
     u16 evIncrease = 0;
     u16 totalEVs = 0;
@@ -5658,6 +5645,7 @@ void MonGainEVs(struct Pokemon *mon, u16 defeatedSpecies)
         totalEVs += evIncrease;
         SetMonData(mon, MON_DATA_HP_EV + i, &evs[i]);
     }
+#endif // Original EV gain code disabled
 }
 
 u16 GetMonEVCount(struct Pokemon *mon)
@@ -6594,7 +6582,9 @@ u32 GetFormChangeTargetSpeciesBoxMon(struct BoxPokemon *boxMon, enum FormChanges
         .method = method,
         .currentSpecies = species,
         .heldItem = GetBoxMonData(boxMon, MON_DATA_HELD_ITEM),
-        .ability = GetAbilityBySpecies(species, GetBoxMonData(boxMon, MON_DATA_ABILITY_NUM)),
+        .ability = (GetBoxMonData(boxMon, MON_DATA_ABILITY_OVERRIDE) != ABILITY_NONE)
+                       ? GetBoxMonData(boxMon, MON_DATA_ABILITY_OVERRIDE)
+                       : GetAbilityBySpecies(species, GetBoxMonData(boxMon, MON_DATA_ABILITY_NUM)),
         .partyItemUsed = gSpecialVar_ItemId,
         .multichoiceSelection = gSpecialVar_Result,
         .status = GetBoxMonData(boxMon, MON_DATA_STATUS),

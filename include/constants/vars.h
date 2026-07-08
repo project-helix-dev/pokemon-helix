@@ -266,17 +266,39 @@
 #define VAR_ROXANNE_CALL_STEP_COUNTER                    0x40F4
 #define VAR_SCOTT_BF_CALL_STEP_COUNTER                   0x40F5
 #define VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER             0x40F6
-#define VAR_UNUSED_0x40F7                                0x40F7 // Unused Var
-#define VAR_UNUSED_0x40F8                                0x40F8 // Unused Var
-#define VAR_UNUSED_0x40F9                                0x40F9 // Unused Var
-#define VAR_UNUSED_0x40FA                                0x40FA // Unused Var
-#define VAR_UNUSED_0x40FB                                0x40FB // Unused Var
-#define VAR_UNUSED_0x40FC                                0x40FC // Unused Var
-#define VAR_UNUSED_0x40FD                                0x40FD // Unused Var
-#define VAR_UNUSED_0x40FE                                0x40FE // Unused Var
-#define VAR_UNUSED_0x40FF                                0x40FF // Unused Var
+#define VAR_HELIX_PLAYER_TYPE                            0x40F7 // Helix: assigned Pokémon type (0-17)
+#define VAR_HELIX_FOOD                                   0x40F8 // Helix: current food supply
+#define VAR_HELIX_DAY_COUNT                              0x40F9 // Helix: current day number
+#define VAR_HELIX_INTRO_STATE                            0x40FA // Helix: intro sequence state
+#define VAR_HELIX_ISLAND_POP                             0x40FB // Helix: island population count
+#define VAR_HELIX_COMFORT                                0x40FC // Helix: island comfort level (affects breeding chance)
+#define VAR_HELIX_STRAY_SPECIES                          0x40FD // Helix: species of today's stray pokeball
+#define VAR_HELIX_STRAY_ABILITY_OVERRIDE                 0x40FE // Helix: stray ability slot override (0xFF = default)
+#define VAR_HELIX_STRAY_GENDER                           0x40FF // Helix: stray gender override (MON_GENDER_RANDOM = no override)
 
-#define VARS_END                                         0x40FF
+// Helix expedition (run) system — extends the vanilla var space.
+// SaveBlock1.vars[] grows accordingly (verified by save size static asserts).
+#define VAR_HELIX_NEXUS_STATE                            0x4100 // Helix: 0 = never visited Nexus, 1 = visited
+#define VAR_HELIX_RUN_ACTIVE                             0x4101 // Helix: 0 = idle, 1 = run in progress, 2 = blackout return pending
+#define VAR_HELIX_RUN_BIOME                              0x4102 // Helix: active run biome (HELIX_BIOME_*)
+#define VAR_HELIX_RUN_ROOM_INDEX                         0x4103 // Helix: current room number (0 = intro trainer room)
+#define VAR_HELIX_RUN_ROOM_TYPE                          0x4104 // Helix: current room type (HELIX_ROOM_*)
+#define VAR_HELIX_RUN_ROOM_COMPLETE                      0x4105 // Helix: 1 once current room's objective is done
+#define VAR_HELIX_RUN_WILD_TARGET                        0x4106 // Helix: wild encounters required in this room
+#define VAR_HELIX_RUN_WILD_DONE                          0x4107 // Helix: wild encounters resolved in this room
+#define VAR_HELIX_RUN_WILD_FLED                          0x4108 // Helix: 1 if the player fled any wild battle in this room
+#define VAR_HELIX_RUN_TRAINER_VARIANT                    0x4109 // Helix: trainer class variant for this room (0-3)
+#define VAR_HELIX_RUN_MONEY_EARNED                       0x410A // Helix: money earned this run (banked on success)
+#define VAR_HELIX_RUN_FOOD_EARNED                        0x410B // Helix: food gathered this run (banked on success)
+#define VAR_HELIX_RUN_LAST_KO                            0x410C // Helix: party slot + 1 of the last mon to land a final blow (0 = none)
+#define VAR_HELIX_RUN_REWARD_STAT_1                      0x410D // Helix: IV reward menu option 1 (stat index)
+#define VAR_HELIX_RUN_REWARD_STAT_2                      0x410E // Helix: IV reward menu option 2 (stat index)
+#define VAR_HELIX_RUN_REWARD_STAT_3                      0x410F // Helix: IV reward menu option 3 (stat index)
+#define VAR_HELIX_LAST_RUN_DAY                           0x4110 // Helix: island day of the most recent run (day gating)
+#define VAR_HELIX_RUN_ENDPOINT_REWARD                    0x4111 // Helix: item id rolled as the endpoint reward
+#define VAR_HELIX_RUN_EXIT_DIR                           0x4112 // Helix: unlocked exit for current room (HELIX_EXIT_*)
+
+#define VARS_END                                         0x4112
 #define VARS_COUNT                                       (VARS_END - VARS_START + 1)
 
 #define SPECIAL_VARS_START            0x8000

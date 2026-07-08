@@ -7,6 +7,7 @@
 #include "daycare.h"
 #include "decompress.h"
 #include "event_data.h"
+#include "helix_run.h"
 #include "international_string_util.h"
 #include "item.h"
 #include "link.h"
@@ -124,6 +125,7 @@ void CreateScriptedWildMon(u16 species, u8 level, enum Item item)
         RANDOM_UNOWN_LETTER);
     CreateMonWithIVs(&gEnemyParty[0], species, level, personality, OTID_STRUCT_PLAYER_ID, USE_RANDOM_IVS);
     GiveMonInitialMoveset(&gEnemyParty[0]);
+    HelixMaybeAdjustRunWildMon(&gEnemyParty[0]); // Helix: straight 5 IVs during runs
     if (item)
     {
         heldItem[0] = item;

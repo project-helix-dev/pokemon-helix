@@ -1902,13 +1902,14 @@ void ExtractMonSkillStatsData(struct Pokemon *mon, struct PokeSummary *sum)
 {
     sum->nature = GetNature(mon);
     sum->mintNature = GetMonData(mon, MON_DATA_HIDDEN_NATURE);
-    sum->currentHP = GetMonData(mon, MON_DATA_HP);
-    sum->maxHP = GetMonData(mon, MON_DATA_MAX_HP);
-    sum->atk = GetMonData(mon, MON_DATA_ATK);
-    sum->def = GetMonData(mon, MON_DATA_DEF);
-    sum->spatk = GetMonData(mon, MON_DATA_SPATK);
-    sum->spdef = GetMonData(mon, MON_DATA_SPDEF);
-    sum->speed = GetMonData(mon, MON_DATA_SPEED);
+    // Helix: show IVs in place of calculated stats
+    sum->currentHP = GetMonData(mon, MON_DATA_HP_IV);
+    sum->maxHP = GetMonData(mon, MON_DATA_HP_IV);
+    sum->atk = GetMonData(mon, MON_DATA_ATK_IV);
+    sum->def = GetMonData(mon, MON_DATA_DEF_IV);
+    sum->spatk = GetMonData(mon, MON_DATA_SPATK_IV);
+    sum->spdef = GetMonData(mon, MON_DATA_SPDEF_IV);
+    sum->speed = GetMonData(mon, MON_DATA_SPEED_IV);
 }
 
 void ExtractMonSkillIvData(struct Pokemon *mon, struct PokeSummary *sum)
@@ -3642,13 +3643,13 @@ static void PrintMonOTID(void)
 
 static void PrintMonAbilityName(void)
 {
-    enum Ability ability = GetAbilityBySpecies(sMonSummaryScreen->summary.species, sMonSummaryScreen->summary.abilityNum);
+    enum Ability ability = GetMonAbility(&sMonSummaryScreen->currentMon);
     PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ABILITY), gAbilitiesInfo[ability].name, 0, 1, 0, 1);
 }
 
 static void PrintMonAbilityDescription(void)
 {
-    enum Ability ability = GetAbilityBySpecies(sMonSummaryScreen->summary.species, sMonSummaryScreen->summary.abilityNum);
+    enum Ability ability = GetMonAbility(&sMonSummaryScreen->currentMon);
     PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ABILITY), gAbilitiesInfo[ability].description, 0, 17, 0, 0);
 }
 
@@ -3799,7 +3800,9 @@ static void PrintEggState(void)
     const u8 *text;
     struct PokeSummary *sum = &sMonSummaryScreen->summary;
 
-    if (sMonSummaryScreen->summary.sanity == TRUE)
+    if (sum->metLocation == METLOC_HELIX_BRED)
+        text = gText_HelixEggHatchTomorrow;
+    else if (sMonSummaryScreen->summary.sanity == TRUE)
         text = gText_EggWillTakeALongTime;
     else if (sum->friendship <= 5)
         text = gText_EggAboutToHatch;
@@ -3826,6 +3829,8 @@ static void PrintEggMemo(void)
             text = gText_PeculiarEggTrade;
         else if (sum->metLocation == METLOC_SPECIAL_EGG)
             text = (DidMonComeFromRSE() == TRUE) ? gText_EggFromHotSprings : gText_EggFromTraveler;
+        else if (sum->metLocation == METLOC_HELIX_BRED)
+            text = gText_HelixBredEgg;
         else
             text = gText_OddEggFoundByCouple;
     }
@@ -3984,22 +3989,20 @@ static const u8 *GetLetterGrade(u32 stat)
 
 static void BufferLeftColumnStats(void)
 {
-    u8 *currentHPString = Alloc(20);
-    u8 *maxHPString = Alloc(20);
+    // Helix: uses IV layout (no HP current/max slash)
+    u8 *hpString = Alloc(20);
     u8 *attackString = Alloc(20);
     u8 *defenseString = Alloc(20);
 
     DynamicPlaceholderTextUtil_Reset();
 
-    BufferStat(currentHPString, STAT_HP, sMonSummaryScreen->summary.currentHP, 0, 3);
-    BufferStat(maxHPString, STAT_HP, sMonSummaryScreen->summary.maxHP, 1, 3);
-    BufferStat(attackString, STAT_ATK, sMonSummaryScreen->summary.atk, 2, 7);
-    BufferStat(defenseString, STAT_DEF, sMonSummaryScreen->summary.def, 3, 7);
+    BufferStat(hpString, STAT_HP, sMonSummaryScreen->summary.currentHP, 0, 7);
+    BufferStat(attackString, STAT_ATK, sMonSummaryScreen->summary.atk, 1, 7);
+    BufferStat(defenseString, STAT_DEF, sMonSummaryScreen->summary.def, 2, 7);
 
-    DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, sStatsLeftColumnLayout);
+    DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, sStatsLeftIVEVColumnLayout);
 
-    Free(currentHPString);
-    Free(maxHPString);
+    Free(hpString);
     Free(attackString);
     Free(defenseString);
 }

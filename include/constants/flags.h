@@ -1222,12 +1222,12 @@
 #define FLAG_ITEM_SAFARI_ZONE_NORTH_EAST_NUGGET                     0x491
 #define FLAG_ITEM_SAFARI_ZONE_SOUTH_EAST_BIG_PEARL                  0x492
 
-#define FLAG_UNUSED_0x493                                           0x493 // Unused Flag
-#define FLAG_UNUSED_0x494                                           0x494 // Unused Flag
-#define FLAG_UNUSED_0x495                                           0x495 // Unused Flag
-#define FLAG_UNUSED_0x496                                           0x496 // Unused Flag
-#define FLAG_UNUSED_0x497                                           0x497 // Unused Flag
-#define FLAG_UNUSED_0x498                                           0x498 // Unused Flag
+#define FLAG_HELIX_STRAY_HIDE_COMMON                                0x493 // Helix: hide common stray ball
+#define FLAG_HELIX_STRAY_HIDE_UNCOMMON                              0x494 // Helix: hide uncommon stray ball
+#define FLAG_HELIX_STRAY_HIDE_RARE                                  0x495 // Helix: hide rare stray ball
+#define FLAG_HELIX_STRAY_HIDE_LEGENDARY                             0x496 // Helix: hide legendary stray ball
+#define FLAG_HELIX_STRAY_MSG_SHOWN                                  0x497 // Helix: "washed up" message shown this day
+#define FLAG_HELIX_TUTORIAL_DONE                                    0x498 // Helix: day-1 tutorial completed
 #define FLAG_UNUSED_0x499                                           0x499 // Unused Flag
 #define FLAG_UNUSED_0x49A                                           0x49A // Unused Flag
 #define FLAG_UNUSED_0x49B                                           0x49B // Unused Flag

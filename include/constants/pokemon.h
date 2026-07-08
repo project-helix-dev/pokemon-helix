@@ -224,8 +224,9 @@ enum OtIdMethod
 #define MAX_SHEEN       255
 #define MAX_CONDITION   255
 
-#define MAX_PER_STAT_IVS 31
-#define MAX_IV_MASK 31
+#define MAX_PER_STAT_IVS 99  // Helix: expanded from 31 to 99
+#define MAX_LEGACY_PER_STAT_IVS 31 // Helix: cap for legacy 5-bit IV bitfields (frontier/e-reader data)
+#define MAX_IV_MASK 0x7F     // Helix: 7-bit mask for legacy packed-IV interface
 #define USE_RANDOM_IVS (MAX_PER_STAT_IVS + 1)
 #define MAX_PER_STAT_EVS ((P_EV_CAP >= GEN_6) ? 252 : 255)
 #define MAX_TOTAL_EVS 510

@@ -58,6 +58,7 @@ enum {
     BALL_THROW_UNABLE_SEMI_INVULNERABLE,
     BALL_THROW_ABLE,
     BALL_THROW_UNABLE_DISABLED_FLAG,
+    BALL_THROW_UNABLE_HELIX_TYPE, // Helix: species doesn't match the player's island type
 };
 
 bool32 CanThrowBall(void);

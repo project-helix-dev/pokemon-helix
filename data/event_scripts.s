@@ -40,6 +40,7 @@
 #include "constants/item.h"
 #include "constants/items.h"
 #include "constants/heal_locations.h"
+#include "constants/helix_run.h"
 #include "constants/layouts.h"
 #include "constants/lilycove_lady.h"
 #include "constants/map_scripts.h"
@@ -478,6 +479,14 @@ gStdScripts_End::
 	.include "data/maps/BattleColosseum_4P/scripts.inc"
 	.include "data/maps/ContestHall/scripts.inc"
 	.include "data/maps/InsideOfTruck/scripts.inc"
+	.include "data/maps/HelixIntroRoom/scripts.inc"
+	.include "data/maps/HelixIsland/scripts.inc"
+	.include "data/maps/HelixNexus/scripts.inc"
+	.include "data/maps/HelixCaveTrainerIntro/scripts.inc"
+	.include "data/maps/HelixCaveRoomWild/scripts.inc"
+	.include "data/maps/HelixCaveRoomTrainer/scripts.inc"
+	.include "data/maps/HelixCaveRoomShop/scripts.inc"
+	.include "data/maps/HelixCaveRoomBoss/scripts.inc"
 	.include "data/maps/SSTidalCorridor/scripts.inc"
 	.include "data/maps/SSTidalLowerDeck/scripts.inc"
 	.include "data/maps/SSTidalRooms/scripts.inc"
@@ -1052,6 +1061,7 @@ gStdScripts_End::
 
 	.include "data/scripts/config.inc"
 	.include "data/scripts/debug.inc"
+	.include "data/scripts/helix_run.inc"
 
 EventScript_WhiteOut::
 	call EverGrandeCity_HallOfFame_EventScript_ResetEliteFour

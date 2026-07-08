@@ -39,6 +39,26 @@
 #include "title_screen.h"
 #include "window.h"
 #include "mystery_gift_menu.h"
+#include "helix.h"
+
+// Helix text externs (defined in data/text/birch_speech.inc)
+extern const u8 gText_Helix_QuizIntro[];
+extern const u8 gText_Helix_QuizQ1[];
+extern const u8 gText_Helix_QuizQ1_Choice0[];
+extern const u8 gText_Helix_QuizQ1_Choice1[];
+extern const u8 gText_Helix_QuizQ1_Choice2[];
+extern const u8 gText_Helix_QuizQ2[];
+extern const u8 gText_Helix_QuizQ2_Choice0[];
+extern const u8 gText_Helix_QuizQ2_Choice1[];
+extern const u8 gText_Helix_QuizQ2_Choice2[];
+extern const u8 gText_Helix_QuizQ3[];
+extern const u8 gText_Helix_QuizQ3_Choice0[];
+extern const u8 gText_Helix_QuizQ3_Choice1[];
+extern const u8 gText_Helix_QuizQ3_Choice2[];
+extern const u8 gText_Helix_TypeResult[];
+extern const u8 gText_Helix_StarterIntro[];
+extern const u8 gText_Helix_StarterSecond[];
+extern const u8 gText_Helix_GotStarters[];
 
 /*
  * Main menu state machine
@@ -237,6 +257,20 @@ static void SpriteCB_MovePlayerDownWhileShrinking(struct Sprite *);
 static void Task_NewGameBirchSpeech_WaitForPlayerShrink(u8);
 static void Task_NewGameBirchSpeech_FadePlayerToWhite(u8);
 static void Task_NewGameBirchSpeech_Cleanup(u8);
+static void Task_HelixSpeech_QuizIntro(u8);
+static void Task_HelixSpeech_QuizQ1(u8);
+static void Task_HelixSpeech_QuizQ1_WaitChoice(u8);
+static void Task_HelixSpeech_QuizQ2(u8);
+static void Task_HelixSpeech_QuizQ2_WaitChoice(u8);
+static void Task_HelixSpeech_QuizQ3(u8);
+static void Task_HelixSpeech_QuizQ3_WaitChoice(u8);
+static void Task_HelixSpeech_ComputeType(u8);
+static void Task_HelixSpeech_StarterIntro(u8);
+static void Task_HelixSpeech_Starter1_WaitChoice(u8);
+static void Task_HelixSpeech_Starter2Intro(u8);
+static void Task_HelixSpeech_Starter2_WaitChoice(u8);
+static void Task_HelixSpeech_GiveStarters(u8);
+static void Task_HelixSpeech_GiveStarters_WaitText(u8);
 static void SpriteCB_Null(struct Sprite *);
 static void Task_NewGameBirchSpeech_ReturnFromNamingScreenShowTextbox(u8);
 static void MainMenu_FormatSavegamePlayer(void);
@@ -413,9 +447,9 @@ static const struct WindowTemplate sNewGameBirchSpeechTextWindows[] =
     {
         .bg = 0,
         .tilemapLeft = 3,
-        .tilemapTop = 2,
+        .tilemapTop = 3,
         .width = 9,
-        .height = 10,
+        .height = 6,
         .paletteNum = 15,
         .baseBlock = 0x85
     },
@@ -474,6 +508,24 @@ static const union AffineAnimCmd *const sSpriteAffineAnimTable_PlayerShrink[] =
 static const struct MenuAction sMenuActions_Gender[] = {
     {gText_Boy, {NULL}},
     {gText_Girl, {NULL}}
+};
+
+static const struct MenuAction sMenuActions_HelixQ1[] = {
+    {gText_Helix_QuizQ1_Choice0, {NULL}},
+    {gText_Helix_QuizQ1_Choice1, {NULL}},
+    {gText_Helix_QuizQ1_Choice2, {NULL}}
+};
+
+static const struct MenuAction sMenuActions_HelixQ2[] = {
+    {gText_Helix_QuizQ2_Choice0, {NULL}},
+    {gText_Helix_QuizQ2_Choice1, {NULL}},
+    {gText_Helix_QuizQ2_Choice2, {NULL}}
+};
+
+static const struct MenuAction sMenuActions_HelixQ3[] = {
+    {gText_Helix_QuizQ3_Choice0, {NULL}},
+    {gText_Helix_QuizQ3_Choice1, {NULL}},
+    {gText_Helix_QuizQ3_Choice2, {NULL}}
 };
 
 static const u8 *const sMalePresetNames[] = {
@@ -1292,6 +1344,12 @@ static void HighlightSelectedMainMenuItem(u8 menuType, u8 selectedMenuItem, s16 
 #define tLotadSpriteId data[9]
 #define tBrendanSpriteId data[10]
 #define tMaySpriteId data[11]
+#define tHelixQuizQ1 data[12]
+#define tHelixQuizQ2 data[13]
+#define tHelixTypeId data[14]
+#define tHelixStarter1 data[15]
+#define tHelixQuizQ3 data[3] // Reuses data[3] — only written at init (0xFF), never read before quiz phase
+
 
 static void Task_NewGameBirchSpeech_Init(u8 taskId)
 {
@@ -1405,7 +1463,7 @@ static void Task_NewGameBirchSpeechSub_InitPokeBall(u8 taskId)
     gSprites[spriteId].invisible = FALSE;
     gSprites[spriteId].data[0] = 0;
 
-    CreatePokeballSpriteToReleaseMon(spriteId, gSprites[spriteId].oam.paletteNum, 112, 58, 0, 0, 32, PALETTES_BG, SPECIES_LOTAD);
+    CreatePokeballSpriteToReleaseMon(spriteId, gSprites[spriteId].oam.paletteNum, 112, 58, 0, 0, 32, PALETTES_BG, SPECIES_OMANYTE);
     gTasks[taskId].func = Task_NewGameBirchSpeechSub_WaitForLotad;
     gTasks[sBirchSpeechMainTaskId].tTimer = 0;
 }
@@ -1632,6 +1690,7 @@ static void Task_NewGameBirchSpeech_StartNamingScreen(u8 taskId)
     if (!gPaletteFade.active)
     {
         FreeAllWindowBuffers();
+        FreeAndDestroyMonPicSprite(gTasks[taskId].tBirchSpriteId);
         FreeAndDestroyMonPicSprite(gTasks[taskId].tLotadSpriteId);
         NewGameBirchSpeech_SetDefaultPlayerName(Random() % NUM_PRESET_NAMES);
         DestroyTask(taskId);
@@ -1662,10 +1721,7 @@ static void Task_NewGameBirchSpeech_ProcessNameYesNoMenu(u8 taskId)
     {
     case 0:
         PlaySE(SE_SELECT);
-        gSprites[gTasks[taskId].tPlayerSpriteId].oam.objMode = ST_OAM_OBJ_BLEND;
-        NewGameBirchSpeech_StartFadeOutTarget1InTarget2(taskId, 2);
-        NewGameBirchSpeech_StartFadePlatformIn(taskId, 1);
-        gTasks[taskId].func = Task_NewGameBirchSpeech_SlidePlatformAway2;
+        gTasks[taskId].func = Task_HelixSpeech_QuizIntro;
         break;
     case MENU_B_PRESSED:
     case 1:
@@ -1811,12 +1867,299 @@ static void Task_NewGameBirchSpeech_Cleanup(u8 taskId)
     if (!gPaletteFade.active)
     {
         FreeAllWindowBuffers();
+        FreeAndDestroyMonPicSprite(gTasks[taskId].tBirchSpriteId);
         FreeAndDestroyMonPicSprite(gTasks[taskId].tLotadSpriteId);
         ResetAllPicSprites();
         SetMainCallback2(CB2_NewGame);
         DestroyTask(taskId);
     }
 }
+
+// ==================== Helix Quiz & Starter Selection ====================
+
+// EWRAM_DATA requires zero init; re-initialized to SPRITE_NONE/0xFF in HelixSpeech_ShowStarterMenu before use.
+static EWRAM_DATA u8 sStarterPreviewSpriteId = 0;
+static EWRAM_DATA u8 sStarterPreviewCursorPos = 0;
+
+static void HelixSpeech_DestroyPreviewSprite(void)
+{
+    if (sStarterPreviewSpriteId != SPRITE_NONE)
+    {
+        FreeAndDestroyMonPicSprite(sStarterPreviewSpriteId);
+        sStarterPreviewSpriteId = SPRITE_NONE;
+    }
+    sStarterPreviewCursorPos = 0xFF;
+}
+
+static void HelixSpeech_UpdatePreviewSprite(u8 typeId, u8 cursorPos, u8 taskId)
+{
+    u16 species;
+
+    if (cursorPos == sStarterPreviewCursorPos)
+        return;
+
+    HelixSpeech_DestroyPreviewSprite();
+
+    species = HelixGetStarterSpecies(typeId, cursorPos);
+    sStarterPreviewSpriteId = CreateMonPicSprite(species, FALSE, 0, TRUE, 178, 68, 13, TAG_NONE);
+    gSprites[sStarterPreviewSpriteId].callback = SpriteCB_Null;
+    gSprites[sStarterPreviewSpriteId].oam.priority = 0;
+    gSprites[gTasks[taskId].tPlayerSpriteId].invisible = TRUE;
+    sStarterPreviewCursorPos = cursorPos;
+}
+
+static void HelixSpeech_HidePreviewShowPlayer(u8 taskId)
+{
+    HelixSpeech_DestroyPreviewSprite();
+    gSprites[gTasks[taskId].tPlayerSpriteId].invisible = FALSE;
+}
+
+static void HelixSpeech_ShowMenu3(const struct MenuAction *actions, u8 count)
+{
+    DrawMainMenuWindowBorder(&sNewGameBirchSpeechTextWindows[2], 0xF3);
+    FillWindowPixelBuffer(2, PIXEL_FILL(1));
+    PrintMenuTable(2, count, actions);
+    InitMenuInUpperLeftCornerNormal(2, count, 0);
+    PutWindowTilemap(2);
+    CopyWindowToVram(2, COPYWIN_FULL);
+}
+
+static void Task_HelixSpeech_QuizIntro(u8 taskId)
+{
+    NewGameBirchSpeech_ClearWindow(0);
+    StringExpandPlaceholders(gStringVar4, gText_Helix_QuizIntro);
+    AddTextPrinterForMessage(TRUE);
+    gTasks[taskId].func = Task_HelixSpeech_QuizQ1;
+}
+
+static void Task_HelixSpeech_QuizQ1(u8 taskId)
+{
+    if (!RunTextPrintersAndIsPrinter0Active())
+    {
+        NewGameBirchSpeech_ClearWindow(0);
+        StringExpandPlaceholders(gStringVar4, gText_Helix_QuizQ1);
+        AddTextPrinterForMessage(TRUE);
+        gTasks[taskId].func = Task_HelixSpeech_QuizQ1_WaitChoice;
+    }
+}
+
+static void Task_HelixSpeech_QuizQ1_HandleInput(u8 taskId)
+{
+    s8 input = Menu_ProcessInputNoWrap();
+    if (input == MENU_NOTHING_CHOSEN || input == MENU_B_PRESSED)
+        return;
+    PlaySE(SE_SELECT);
+    NewGameBirchSpeech_ClearGenderWindow(2, 1);
+    gTasks[taskId].tHelixQuizQ1 = input;
+    gTasks[taskId].func = Task_HelixSpeech_QuizQ2;
+}
+
+static void Task_HelixSpeech_QuizQ1_WaitChoice(u8 taskId)
+{
+    if (!RunTextPrintersAndIsPrinter0Active())
+    {
+        HelixSpeech_ShowMenu3(sMenuActions_HelixQ1, ARRAY_COUNT(sMenuActions_HelixQ1));
+        gTasks[taskId].func = Task_HelixSpeech_QuizQ1_HandleInput;
+    }
+}
+
+static void Task_HelixSpeech_QuizQ2(u8 taskId)
+{
+    NewGameBirchSpeech_ClearWindow(0);
+    StringExpandPlaceholders(gStringVar4, gText_Helix_QuizQ2);
+    AddTextPrinterForMessage(TRUE);
+    gTasks[taskId].func = Task_HelixSpeech_QuizQ2_WaitChoice;
+}
+
+static void Task_HelixSpeech_QuizQ2_HandleInput(u8 taskId)
+{
+    s8 input = Menu_ProcessInputNoWrap();
+    if (input == MENU_NOTHING_CHOSEN || input == MENU_B_PRESSED)
+        return;
+    PlaySE(SE_SELECT);
+    NewGameBirchSpeech_ClearGenderWindow(2, 1);
+    gTasks[taskId].tHelixQuizQ2 = input;
+    gTasks[taskId].func = Task_HelixSpeech_QuizQ3;
+}
+
+static void Task_HelixSpeech_QuizQ2_WaitChoice(u8 taskId)
+{
+    if (!RunTextPrintersAndIsPrinter0Active())
+    {
+        HelixSpeech_ShowMenu3(sMenuActions_HelixQ2, ARRAY_COUNT(sMenuActions_HelixQ2));
+        gTasks[taskId].func = Task_HelixSpeech_QuizQ2_HandleInput;
+    }
+}
+
+static void Task_HelixSpeech_QuizQ3(u8 taskId)
+{
+    NewGameBirchSpeech_ClearWindow(0);
+    StringExpandPlaceholders(gStringVar4, gText_Helix_QuizQ3);
+    AddTextPrinterForMessage(TRUE);
+    gTasks[taskId].func = Task_HelixSpeech_QuizQ3_WaitChoice;
+}
+
+static void Task_HelixSpeech_QuizQ3_HandleInput(u8 taskId)
+{
+    s8 input = Menu_ProcessInputNoWrap();
+    if (input == MENU_NOTHING_CHOSEN || input == MENU_B_PRESSED)
+        return;
+    PlaySE(SE_SELECT);
+    NewGameBirchSpeech_ClearGenderWindow(2, 1);
+    gTasks[taskId].tHelixQuizQ3 = input;
+    gTasks[taskId].func = Task_HelixSpeech_ComputeType;
+}
+
+static void Task_HelixSpeech_QuizQ3_WaitChoice(u8 taskId)
+{
+    if (!RunTextPrintersAndIsPrinter0Active())
+    {
+        HelixSpeech_ShowMenu3(sMenuActions_HelixQ3, ARRAY_COUNT(sMenuActions_HelixQ3));
+        gTasks[taskId].func = Task_HelixSpeech_QuizQ3_HandleInput;
+    }
+}
+
+static void Task_HelixSpeech_ComputeType(u8 taskId)
+{
+    u8 typeId = HelixComputeTypeFromQuiz(gTasks[taskId].tHelixQuizQ1, gTasks[taskId].tHelixQuizQ2, gTasks[taskId].tHelixQuizQ3);
+    gTasks[taskId].tHelixTypeId = typeId;
+    StringCopy(gStringVar1, gHelixTypeNames[typeId]);
+    NewGameBirchSpeech_ClearWindow(0);
+    StringExpandPlaceholders(gStringVar4, gText_Helix_TypeResult);
+    AddTextPrinterForMessage(TRUE);
+    gTasks[taskId].func = Task_HelixSpeech_StarterIntro;
+}
+
+static void Task_HelixSpeech_StarterIntro(u8 taskId)
+{
+    if (!RunTextPrintersAndIsPrinter0Active())
+    {
+        u8 typeId = gTasks[taskId].tHelixTypeId;
+        u16 s0 = HelixGetStarterSpecies(typeId, 0);
+        u16 s1 = HelixGetStarterSpecies(typeId, 1);
+        u16 s2 = HelixGetStarterSpecies(typeId, 2);
+        StringCopy(gStringVar1, GetSpeciesName(s0));
+        StringCopy(gStringVar2, GetSpeciesName(s1));
+        StringCopy(gStringVar3, GetSpeciesName(s2));
+        NewGameBirchSpeech_ClearWindow(0);
+        StringExpandPlaceholders(gStringVar4, gText_Helix_StarterIntro);
+        AddTextPrinterForMessage(TRUE);
+        gTasks[taskId].func = Task_HelixSpeech_Starter1_WaitChoice;
+    }
+}
+
+static void HelixSpeech_ShowStarterMenu(u8 typeId, u8 taskId)
+{
+    struct MenuAction starterActions[3];
+    starterActions[0].text = GetSpeciesName(HelixGetStarterSpecies(typeId, 0));
+    starterActions[0].func.void_u8 = NULL;
+    starterActions[1].text = GetSpeciesName(HelixGetStarterSpecies(typeId, 1));
+    starterActions[1].func.void_u8 = NULL;
+    starterActions[2].text = GetSpeciesName(HelixGetStarterSpecies(typeId, 2));
+    starterActions[2].func.void_u8 = NULL;
+    DrawMainMenuWindowBorder(&sNewGameBirchSpeechTextWindows[2], 0xF3);
+    FillWindowPixelBuffer(2, PIXEL_FILL(1));
+    PrintMenuTable(2, 3, starterActions);
+    InitMenuInUpperLeftCornerNormal(2, 3, 0);
+    PutWindowTilemap(2);
+    CopyWindowToVram(2, COPYWIN_FULL);
+    sStarterPreviewSpriteId = SPRITE_NONE;
+    sStarterPreviewCursorPos = 0xFF;
+    HelixSpeech_UpdatePreviewSprite(typeId, 0, taskId);
+}
+
+static void HelixSpeech_ClearStarterMenu(void)
+{
+    NewGameBirchSpeech_ClearGenderWindow(2, 1);
+}
+
+static void Task_HelixSpeech_Starter1_HandleInput(u8 taskId)
+{
+    u8 typeId = gTasks[taskId].tHelixTypeId;
+    s8 input = Menu_ProcessInputNoWrap();
+
+    if (input == MENU_NOTHING_CHOSEN || input == MENU_B_PRESSED)
+    {
+        HelixSpeech_UpdatePreviewSprite(typeId, Menu_GetCursorPos(), taskId);
+        return;
+    }
+    PlaySE(SE_SELECT);
+    HelixSpeech_ClearStarterMenu();
+    HelixSpeech_HidePreviewShowPlayer(taskId);
+    gTasks[taskId].tHelixStarter1 = input;
+    gTasks[taskId].func = Task_HelixSpeech_Starter2Intro;
+}
+
+static void Task_HelixSpeech_Starter1_WaitChoice(u8 taskId)
+{
+    if (!RunTextPrintersAndIsPrinter0Active())
+    {
+        HelixSpeech_ShowStarterMenu(gTasks[taskId].tHelixTypeId, taskId);
+        gTasks[taskId].func = Task_HelixSpeech_Starter1_HandleInput;
+    }
+}
+
+static void Task_HelixSpeech_Starter2Intro(u8 taskId)
+{
+    u16 species = HelixGetStarterSpecies(gTasks[taskId].tHelixTypeId, gTasks[taskId].tHelixStarter1);
+    StringCopy(gStringVar1, GetSpeciesName(species));
+    NewGameBirchSpeech_ClearWindow(0);
+    StringExpandPlaceholders(gStringVar4, gText_Helix_StarterSecond);
+    AddTextPrinterForMessage(TRUE);
+    gTasks[taskId].func = Task_HelixSpeech_Starter2_WaitChoice;
+}
+
+static void Task_HelixSpeech_Starter2_HandleInput(u8 taskId)
+{
+    u8 typeId = gTasks[taskId].tHelixTypeId;
+    s8 input = Menu_ProcessInputNoWrap();
+
+    if (input == MENU_NOTHING_CHOSEN || input == MENU_B_PRESSED)
+    {
+        HelixSpeech_UpdatePreviewSprite(typeId, Menu_GetCursorPos(), taskId);
+        return;
+    }
+    PlaySE(SE_SELECT);
+    HelixSpeech_ClearStarterMenu();
+    HelixSpeech_HidePreviewShowPlayer(taskId);
+    {
+        u16 species = HelixGetStarterSpecies(gTasks[taskId].tHelixTypeId, input);
+        StringCopy(gStringVar1, GetSpeciesName(species));
+    }
+    HelixStashNewGameState(gTasks[taskId].tHelixTypeId, gTasks[taskId].tHelixStarter1, input);
+    gTasks[taskId].func = Task_HelixSpeech_GiveStarters;
+}
+
+static void Task_HelixSpeech_Starter2_WaitChoice(u8 taskId)
+{
+    if (!RunTextPrintersAndIsPrinter0Active())
+    {
+        HelixSpeech_ShowStarterMenu(gTasks[taskId].tHelixTypeId, taskId);
+        gTasks[taskId].func = Task_HelixSpeech_Starter2_HandleInput;
+    }
+}
+
+static void Task_HelixSpeech_GiveStarters(u8 taskId)
+{
+    PlayFanfare(MUS_OBTAIN_ITEM);
+    NewGameBirchSpeech_ClearWindow(0);
+    StringExpandPlaceholders(gStringVar4, gText_Helix_GotStarters);
+    AddTextPrinterForMessage(TRUE);
+    gTasks[taskId].func = Task_HelixSpeech_GiveStarters_WaitText;
+}
+
+static void Task_HelixSpeech_GiveStarters_WaitText(u8 taskId)
+{
+    if (!RunTextPrintersAndIsPrinter0Active() && IsFanfareTaskInactive())
+    {
+        gSprites[gTasks[taskId].tPlayerSpriteId].oam.objMode = ST_OAM_OBJ_BLEND;
+        NewGameBirchSpeech_StartFadeOutTarget1InTarget2(taskId, 2);
+        NewGameBirchSpeech_StartFadePlatformIn(taskId, 1);
+        gTasks[taskId].func = Task_NewGameBirchSpeech_SlidePlatformAway2;
+    }
+}
+
+// ==================== End Helix Quiz & Starter Selection ====================
 
 static void CB2_NewGameBirchSpeech_ReturnFromNamingScreen(void)
 {
@@ -1909,7 +2252,7 @@ static void SpriteCB_MovePlayerDownWhileShrinking(struct Sprite *sprite)
 
 static u8 NewGameBirchSpeech_CreateLotadSprite(u8 x, u8 y)
 {
-    return CreateMonPicSprite_Affine(SPECIES_LOTAD, FALSE, 0, MON_PIC_AFFINE_FRONT, x, y, 14, TAG_NONE);
+    return CreateMonPicSprite_Affine(SPECIES_OMANYTE, FALSE, 0, MON_PIC_AFFINE_FRONT, x, y, 14, TAG_NONE);
 }
 
 static void AddBirchSpeechObjects(u8 taskId)
@@ -1919,7 +2262,7 @@ static void AddBirchSpeechObjects(u8 taskId)
     u8 brendanSpriteId;
     u8 maySpriteId;
 
-    birchSpriteId = AddNewGameBirchObject(0x88, 0x3C, 1);
+    birchSpriteId = CreateMonPicSprite(SPECIES_DEOXYS, FALSE, 0, TRUE, 0x88, 0x3C, 12, TAG_NONE);
     gSprites[birchSpriteId].callback = SpriteCB_Null;
     gSprites[birchSpriteId].oam.priority = 0;
     gSprites[birchSpriteId].invisible = TRUE;

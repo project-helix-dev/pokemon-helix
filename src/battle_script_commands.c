@@ -51,6 +51,7 @@
 #include "menu_specialized.h"
 #include "data.h"
 #include "generational_changes.h"
+#include "helix_run.h"
 #include "move.h"
 #include "constants/abilities.h"
 #include "constants/battle_anim.h"
@@ -3874,6 +3875,9 @@ static void Cmd_tryfaintmon(void)
                     gBattleResults.opponentFaintCounter++;
                 gBattleResults.lastOpponentSpecies = GetMonData(GetBattlerMon(battler), MON_DATA_SPECIES);
                 gSideTimers[B_SIDE_OPPONENT].retaliateTimer = 2;
+                // Helix: record which party mon landed the final blow (IV rewards)
+                HelixOnOpponentFainted(gBattlerPartyIndexes[gBattlerAttacker],
+                                       IsOnPlayerSide(gBattlerAttacker));
             }
 
             TryDeactivateSleepClause(GetBattlerSide(battler), gBattlerPartyIndexes[battler]);
@@ -4075,6 +4079,8 @@ FEATURE_FLAG_ASSERT(I_EXP_SHARE_FLAG, YouNeedToSetTheExpShareFlagToAnUnusedFlag)
 
 static bool32 BattleTypeAllowsExp(void)
 {
+    if (HelixNoExpEnabled()) // Helix: level-less design — no EXP is ever awarded
+        return FALSE;
     if (RECORDED_WILD_BATTLE)
         return TRUE;
     else if (gBattleTypeFlags &
@@ -6209,10 +6215,24 @@ static void Cmd_getmoneyreward(void)
 
     if (gBattleOutcome == B_OUTCOME_WON)
     {
-        money = GetTrainerMoneyToGive(TRAINER_BATTLE_PARAM.opponentA);
-        if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
-            money += GetTrainerMoneyToGive(TRAINER_BATTLE_PARAM.opponentB);
-        AddMoney(&gSaveBlock1Ptr->money, money);
+        if (HelixIsRunActive())
+        {
+            // Helix: run trainer payouts are fixed and unbanked until run success
+            money = HELIX_RUN_TRAINER_REWARD_MONEY;
+            HelixAddRunMoney(money);
+        }
+        else
+        {
+            money = GetTrainerMoneyToGive(TRAINER_BATTLE_PARAM.opponentA);
+            if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
+                money += GetTrainerMoneyToGive(TRAINER_BATTLE_PARAM.opponentB);
+            AddMoney(&gSaveBlock1Ptr->money, money);
+        }
+    }
+    else if (HelixIsRunActive())
+    {
+        // Helix: losing during a run costs the unbanked run rewards, not banked money
+        money = 0;
     }
     else
     {

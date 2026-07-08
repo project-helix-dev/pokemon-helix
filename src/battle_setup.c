@@ -13,6 +13,7 @@
 #include "field_player_avatar.h"
 #include "fieldmap.h"
 #include "follower_npc.h"
+#include "helix_run.h"
 #include "random.h"
 #include "starter_choose.h"
 #include "script_pokemon_util.h"
@@ -661,6 +662,7 @@ static void CB2_EndWildBattle(void)
     }
     else
     {
+        HelixOnWildBattleEnd(); // Helix: run wild-room bookkeeping + faint attrition
         SetMainCallback2(CB2_ReturnToField);
         DowngradeBadPoison();
         gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic;
@@ -681,6 +683,7 @@ static void CB2_EndScriptedWildBattle(void)
     }
     else
     {
+        HelixOnScriptedWildBattleEnd(); // Helix: faint attrition after boss battles
         DowngradeBadPoison();
         SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
     }

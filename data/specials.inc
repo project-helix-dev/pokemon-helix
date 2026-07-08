@@ -638,3 +638,25 @@ gSpecials::
 	def_special UpdateTrainerCardPhotoIcons
 	def_special StickerManGetBragFlags
 	def_special CheckAddCoins
+	def_special HelixSpecial_BufferTypeName
+	def_special HelixSpecial_BufferStarterNames
+	def_special HelixSpecial_CountPopulation
+	def_special HelixSpecial_HatchEggs
+	def_special HelixSpecial_BreedBoxes
+	def_special HelixSpecial_GenerateStray
+	def_special HelixSpecial_GenerateDay1Stray
+	def_special HelixSpecial_GiveStray
+	def_special HelixSpecial_SetGuideGraphics
+	def_special HelixSpecial_SetNexusGuideGraphics
+	def_special HelixSpecial_CheckRunEntry
+	def_special HelixSpecial_StartCavesRun
+	def_special HelixSpecial_RollNextCaveRoom
+	def_special HelixSpecial_SetupRunTrainerGfx
+	def_special HelixSpecial_OnRunTrainerWon
+	def_special HelixSpecial_HasIVRewardRecipient
+	def_special HelixSpecial_BufferIVRecipientName
+	def_special HelixSpecial_PrepareIVRewardChoices
+	def_special HelixSpecial_ApplyIVRewardChoice
+	def_special HelixSpecial_RollEndpointReward
+	def_special HelixSpecial_BufferRunSummary
+	def_special HelixSpecial_CompleteCavesRun

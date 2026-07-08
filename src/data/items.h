@@ -195,7 +195,7 @@ const struct ItemInfo gItemsInfo[] =
     [ITEM_POKE_BALL] =
     {
         .name = ITEM_NAME("Poké Ball"),
-        .price = 200,
+        .price = 100, // Helix: run shop price
         .description = COMPOUND_STRING(
             "A tool used for\n"
             "catching wild\n"
@@ -632,7 +632,7 @@ const struct ItemInfo gItemsInfo[] =
     [ITEM_POTION] =
     {
         .name = ITEM_NAME("Potion"),
-        .price = (I_PRICE >= GEN_7) ? 200 : 300,
+        .price = 100, // Helix: run shop price
         .holdEffectParam = 20,
         .description = COMPOUND_STRING(
             "Restores the HP of\n"
@@ -4196,15 +4196,7 @@ const struct ItemInfo gItemsInfo[] =
     [ITEM_MOON_STONE] =
     {
         .name = ITEM_NAME("Moon Stone"),
-    #if I_PRICE >= GEN_7
-        .price = 3000,
-    #elif I_PRICE >= GEN_4
-        .price = 2100,
-    #elif I_PRICE == GEN_3
-        .price = 0,
-    #else
-        .price = 1,
-    #endif
+        .price = 100, // Helix: run shop price
         .description = sEvolutionStoneDesc,
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_EVOLUTION_STONE,

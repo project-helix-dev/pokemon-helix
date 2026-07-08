@@ -1,0 +1,213 @@
+{
+  "id": "MAP_HELIX_ISLAND",
+  "name": "HelixIsland",
+  "layout": "LAYOUT_HELIX_ISLAND",
+  "music": "MUS_LITTLEROOT",
+  "region_map_section": "MAPSEC_LITTLEROOT_TOWN",
+  "requires_flash": false,
+  "weather": "WEATHER_SUNNY",
+  "map_type": "MAP_TYPE_TOWN",
+  "allow_cycling": true,
+  "allow_escaping": false,
+  "allow_running": true,
+  "show_map_name": true,
+  "battle_scene": "MAP_BATTLE_SCENE_NORMAL",
+  "connections": null,
+  "object_events": [
+    {
+      "local_id": "LOCALID_HELIX_ISLAND_PC",
+      "graphics_id": "OBJ_EVENT_GFX_CUTTABLE_TREE",
+      "x": 52,
+      "y": 10,
+      "elevation": 3,
+      "movement_type": "MOVEMENT_TYPE_NONE",
+      "movement_range_x": 0,
+      "movement_range_y": 0,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "HelixIsland_EventScript_PC",
+      "flag": "0"
+    },
+    {
+      "local_id": "LOCALID_HELIX_ISLAND_STRAY_COMMON",
+      "graphics_id": "OBJ_EVENT_GFX_ITEM_BALL",
+      "x": 55,
+      "y": 24,
+      "elevation": 3,
+      "movement_type": "MOVEMENT_TYPE_NONE",
+      "movement_range_x": 0,
+      "movement_range_y": 0,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "HelixIsland_EventScript_StrayBall",
+      "flag": "FLAG_HELIX_STRAY_HIDE_COMMON"
+    },
+    {
+      "local_id": "LOCALID_HELIX_ISLAND_STRAY_UNCOMMON",
+      "graphics_id": "OBJ_EVENT_GFX_GREAT_BALL",
+      "x": 55,
+      "y": 24,
+      "elevation": 3,
+      "movement_type": "MOVEMENT_TYPE_NONE",
+      "movement_range_x": 0,
+      "movement_range_y": 0,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "HelixIsland_EventScript_StrayBall",
+      "flag": "FLAG_HELIX_STRAY_HIDE_UNCOMMON"
+    },
+    {
+      "local_id": "LOCALID_HELIX_ISLAND_STRAY_RARE",
+      "graphics_id": "OBJ_EVENT_GFX_ULTRA_BALL",
+      "x": 55,
+      "y": 24,
+      "elevation": 3,
+      "movement_type": "MOVEMENT_TYPE_NONE",
+      "movement_range_x": 0,
+      "movement_range_y": 0,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "HelixIsland_EventScript_StrayBall",
+      "flag": "FLAG_HELIX_STRAY_HIDE_RARE"
+    },
+    {
+      "local_id": "LOCALID_HELIX_ISLAND_STRAY_LEGENDARY",
+      "graphics_id": "OBJ_EVENT_GFX_MASTER_BALL",
+      "x": 55,
+      "y": 24,
+      "elevation": 3,
+      "movement_type": "MOVEMENT_TYPE_NONE",
+      "movement_range_x": 0,
+      "movement_range_y": 0,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "HelixIsland_EventScript_StrayBall",
+      "flag": "FLAG_HELIX_STRAY_HIDE_LEGENDARY"
+    },
+    {
+      "local_id": "LOCALID_HELIX_ISLAND_GUIDE",
+      "graphics_id": "OBJ_EVENT_GFX_NORMAN",
+      "x": 42,
+      "y": 17,
+      "elevation": 3,
+      "movement_type": "MOVEMENT_TYPE_NONE",
+      "movement_range_x": 0,
+      "movement_range_y": 0,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "HelixIsland_EventScript_GuideInteract",
+      "flag": "0"
+    }
+  ],
+  "warp_events": [],
+  "coord_events": [
+    {
+      "type": "trigger",
+      "x": 52,
+      "y": 24,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryLeft"
+    },
+    {
+      "type": "trigger",
+      "x": 52,
+      "y": 25,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryLeft"
+    },
+    {
+      "type": "trigger",
+      "x": 52,
+      "y": 26,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryLeft"
+    },
+    {
+      "type": "trigger",
+      "x": 52,
+      "y": 27,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryLeft"
+    },
+    {
+      "type": "trigger",
+      "x": 52,
+      "y": 28,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryLeft"
+    },
+    {
+      "type": "trigger",
+      "x": 54,
+      "y": 22,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryTop"
+    },
+    {
+      "type": "trigger",
+      "x": 55,
+      "y": 22,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryTop"
+    },
+    {
+      "type": "trigger",
+      "x": 56,
+      "y": 22,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryTop"
+    },
+    {
+      "type": "trigger",
+      "x": 57,
+      "y": 22,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryTop"
+    },
+    {
+      "type": "trigger",
+      "x": 58,
+      "y": 22,
+      "elevation": 0,
+      "var": "VAR_HELIX_INTRO_STATE",
+      "var_value": "3",
+      "script": "HelixIsland_EventScript_BoundaryTop"
+    }
+  ],
+  "bg_events": [
+    {
+      "type": "sign",
+      "x": 33,
+      "y": 26,
+      "elevation": 0,
+      "player_facing_dir": "BG_EVENT_PLAYER_FACING_ANY",
+      "script": "HelixIsland_EventScript_BedNPC"
+    },
+    {
+      "type": "sign",
+      "x": 33,
+      "y": 25,
+      "elevation": 0,
+      "player_facing_dir": "BG_EVENT_PLAYER_FACING_ANY",
+      "script": "HelixIsland_EventScript_BedNPC"
+    }
+  ]
+}

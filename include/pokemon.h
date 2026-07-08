@@ -124,6 +124,7 @@ enum MonData {
     MON_DATA_GIGANTAMAX_FACTOR,
     MON_DATA_TERA_TYPE,
     MON_DATA_EVOLUTION_TRACKER,
+    MON_DATA_ABILITY_OVERRIDE,
 };
 
 struct PokemonSubstruct0
@@ -131,10 +132,10 @@ struct PokemonSubstruct0
     u16 species:11; // 2047 species.
     enum Type teraType:5; // 30 types.
     u16 heldItem:10; // 1023 items.
-    u16 unused_02:6;
+    u16 abilityOverrideLo:6; // Lower 6 bits of ability override (0 = none). Combined with abilityOverrideHi for 9-bit ability ID.
     u32 experience:21;
     u32 nickname11:8; // 11th character of nickname.
-    u32 unused_04:3;
+    u32 abilityOverrideHi:3; // Upper 3 bits of ability override.
     u8 ppBonuses;
     u8 friendship;
     u16 pokeball:6; // 63 balls.
@@ -166,12 +167,13 @@ struct PokemonSubstruct1
 
 struct PokemonSubstruct2
 {
-    u8 hpEV;
-    u8 attackEV;
-    u8 defenseEV;
-    u8 speedEV;
-    u8 spAttackEV;
-    u8 spDefenseEV;
+    // Helix: EV fields repurposed as IV storage (u8, 0-99 range)
+    u8 hpIV;
+    u8 attackIV;
+    u8 defenseIV;
+    u8 speedIV;
+    u8 spAttackIV;
+    u8 spDefenseIV;
     u8 cool;
     u8 beauty;
     u8 cute;
@@ -343,13 +345,14 @@ struct BattlePokemon
     /*0x08*/ u16 spAttack;
     /*0x0A*/ u16 spDefense;
     /*0x0C*/ enum Move moves[MAX_MON_MOVES];
-    /*0x14*/ u32 hpIV:5;
-    /*0x14*/ u32 attackIV:5;
-    /*0x15*/ u32 defenseIV:5;
-    /*0x15*/ u32 speedIV:5;
-    /*0x16*/ u32 spAttackIV:5;
-    /*0x17*/ u32 spDefenseIV:5;
-    /*0x17*/ u32 abilityNum:2;
+    // Helix: IVs expanded to u8 for 0-99 range
+    /*0x14*/ u8 hpIV;
+    /*0x15*/ u8 attackIV;
+    /*0x16*/ u8 defenseIV;
+    /*0x17*/ u8 speedIV;
+    /*0x18*/ u8 spAttackIV;
+    /*0x19*/ u8 spDefenseIV;
+    /*0x1A*/ u8 abilityNum;
     /*0x18*/ s8 statStages[NUM_BATTLE_STATS];
     /*0x20*/ enum Ability ability;
     /*0x22*/ enum Type types[3];

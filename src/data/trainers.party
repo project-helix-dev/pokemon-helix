@@ -16873,3 +16873,63 @@ Double Battle: No
 Kyogre
 Level: 5
 IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
+
+=== TRAINER_HELIX_CAVE_INTRO ===
+Name: MARLON
+Class: Hiker
+Pic: Hiker
+Gender: Male
+Music: Male
+Double Battle: No
+
+Diglett
+Level: 5
+IVs: 5 HP / 5 Atk / 5 Def / 5 SpA / 5 SpD / 5 Spe
+
+=== TRAINER_HELIX_CAVE_HIKER ===
+Name: BORIS
+Class: Hiker
+Pic: Hiker
+Gender: Male
+Music: Male
+Double Battle: No
+
+Geodude
+Level: 5
+IVs: 5 HP / 5 Atk / 5 Def / 5 SpA / 5 SpD / 5 Spe
+
+=== TRAINER_HELIX_CAVE_CAMPER ===
+Name: TOBIN
+Class: Camper
+Pic: Camper
+Gender: Male
+Music: Male
+Double Battle: No
+
+Sandshrew
+Level: 5
+IVs: 5 HP / 5 Atk / 5 Def / 5 SpA / 5 SpD / 5 Spe
+
+=== TRAINER_HELIX_CAVE_NERD ===
+Name: ELLIS
+Class: School Kid
+Pic: School Kid M
+Gender: Male
+Music: Male
+Double Battle: No
+
+Zubat
+Level: 5
+IVs: 5 HP / 5 Atk / 5 Def / 5 SpA / 5 SpD / 5 Spe
+
+=== TRAINER_HELIX_CAVE_OLD_MAN ===
+Name: HOLLIS
+Class: Expert
+Pic: Expert M
+Gender: Male
+Music: Male
+Double Battle: No
+
+Numel
+Level: 5
+IVs: 5 HP / 5 Atk / 5 Def / 5 SpA / 5 SpD / 5 Spe

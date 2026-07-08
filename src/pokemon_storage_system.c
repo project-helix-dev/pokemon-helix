@@ -109,6 +109,7 @@ enum {
     MSG_ITEM_IS_HELD,
     MSG_CHANGED_TO_ITEM,
     MSG_CANT_STORE_MAIL,
+    MSG_CANT_WITHDRAW_EGG,
 };
 
 // IDs for how to resolve variables in the above messages
@@ -165,6 +166,7 @@ enum {
     MENU_MACHINE,
     MENU_SIMPLE,
     MENU_SELECT,
+    MENU_NICKNAME,
 };
 #define MENU_WALLPAPER_SETS_START MENU_SCENERY_1
 #define MENU_WALLPAPERS_START MENU_FOREST
@@ -207,6 +209,7 @@ enum {
     SCREEN_CHANGE_SUMMARY_SCREEN,
     SCREEN_CHANGE_NAME_BOX,
     SCREEN_CHANGE_ITEM_FROM_BAG,
+    SCREEN_CHANGE_NICKNAME,
 };
 
 enum {
@@ -582,6 +585,7 @@ static void Task_ItemToBag(u8);
 static void Task_TakeItemForMoving(u8);
 static void Task_ShowMarkMenu(u8);
 static void Task_ShowMonSummary(u8);
+static void Task_NicknameMon(u8);
 static void Task_ReleaseMon(u8);
 static void Task_ReshowPokeStorage(u8);
 static void Task_PokeStorageMain(u8);
@@ -858,6 +862,7 @@ void SetMonFormPSS_ItemHold(struct BoxPokemon *boxMon);
 void UpdateSpeciesSpritePSS(struct BoxPokemon *boxmon);
 
 static const u8 gText_JustOnePkmn[] = _("There is just one POKéMON with you.");
+static const u8 gText_NoPkmnInParty[] = _("You have no POKéMON in your party!");
 static const u8 gText_PartyFull[] = _("Your party is full!");
 static const u8 gText_Box[] = _("BOX");
 
@@ -1064,7 +1069,7 @@ static const struct StorageMessage sMessages[] =
     [MSG_PARTY_FULL]           = {gText_YourPartysFull,                          MSG_VAR_NONE},
     [MSG_HOLDING_POKE]         = {COMPOUND_STRING("You're holding a POKéMON!"),  MSG_VAR_NONE},
     [MSG_WHICH_ONE_WILL_TAKE]  = {COMPOUND_STRING("Which one will you take?"),   MSG_VAR_NONE},
-    [MSG_CANT_RELEASE_EGG]     = {COMPOUND_STRING("You can't release an EGG."),  MSG_VAR_NONE},
+    [MSG_CANT_RELEASE_EGG]     = {COMPOUND_STRING("You can't release an egg."),  MSG_VAR_NONE},
     [MSG_CONTINUE_BOX]         = {COMPOUND_STRING("Continue BOX operations?"),   MSG_VAR_NONE},
     [MSG_CAME_BACK]            = {COMPOUND_STRING("{DYNAMIC 0} came back!"),     MSG_VAR_MON_NAME_1},
     [MSG_WORRIED]              = {COMPOUND_STRING("Was it worried about you?"),  MSG_VAR_NONE},
@@ -1077,7 +1082,8 @@ static const struct StorageMessage sMessages[] =
     [MSG_PUT_IN_BAG]           = {COMPOUND_STRING("Put this item in the BAG?"),  MSG_VAR_NONE},
     [MSG_ITEM_IS_HELD]         = {COMPOUND_STRING("{DYNAMIC 0} is now held."),   MSG_VAR_ITEM_NAME},
     [MSG_CHANGED_TO_ITEM]      = {COMPOUND_STRING("Changed to {DYNAMIC 0}."),    MSG_VAR_ITEM_NAME},
-    [MSG_CANT_STORE_MAIL]      = {COMPOUND_STRING("MAIL can't be stored!"),      MSG_VAR_NONE},
+    [MSG_CANT_WITHDRAW_EGG]     = {COMPOUND_STRING("Eggs can't leave the PC!"),  MSG_VAR_NONE},
+    [MSG_CANT_STORE_MAIL]       = {COMPOUND_STRING("MAIL can't be stored!"),      MSG_VAR_NONE},
 };
 
 static const struct WindowTemplate sYesNoWindowTemplate =
@@ -1560,11 +1566,11 @@ static void Task_PCMainMenu(u8 taskId)
                 AddTextPrinterParameterized2(0, FONT_NORMAL, gText_PartyFull, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
                 task->tState = STATE_ERROR_MSG;
             }
-            else if (task->tInput == OPTION_DEPOSIT && CountPartyMons() == 1)
+            else if (task->tInput == OPTION_DEPOSIT && CountPartyMons() == 0)
             {
-                // Can't deposit
+                // Helix: Can't deposit — no Pokémon in party
                 FillWindowPixelBuffer(0, PIXEL_FILL(1));
-                AddTextPrinterParameterized2(0, FONT_NORMAL, gText_JustOnePkmn, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+                AddTextPrinterParameterized2(0, FONT_NORMAL, gText_NoPkmnInParty, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
                 task->tState = STATE_ERROR_MSG;
             }
             else
@@ -2088,6 +2094,9 @@ static void Task_InitPokeStorage(u8 taskId)
                 // Return from bag menu
                 GiveChosenBagItem();
                 break;
+            case SCREEN_CHANGE_NICKNAME - 1:
+                // Return from nickname screen — name already applied in callback
+                break;
             }
         }
         LoadPokeStorageMenuGfx();
@@ -2243,6 +2252,7 @@ enum {
     MSTATE_MULTIMOVE_RUN_MOVED,
     MSTATE_SCROLL_BOX_ITEM,
     MSTATE_WAIT_ITEM_ANIM,
+    MSTATE_ERROR_CANT_WITHDRAW_EGG,
 };
 
 static void Task_PokeStorageMain(u8 taskId)
@@ -2367,8 +2377,16 @@ static void Task_PokeStorageMain(u8 taskId)
             }
             break;
         case INPUT_WITHDRAW:
-            PlaySE(SE_SELECT);
-            SetPokeStorageTask(Task_WithdrawMon);
+            // Helix: Eggs cannot leave the PC
+            if (sStorage->displayMonIsEgg)
+            {
+                sStorage->state = MSTATE_ERROR_CANT_WITHDRAW_EGG;
+            }
+            else
+            {
+                PlaySE(SE_SELECT);
+                SetPokeStorageTask(Task_WithdrawMon);
+            }
             break;
         case INPUT_PLACE_MON:
             PlaySE(SE_SELECT);
@@ -2470,6 +2488,11 @@ static void Task_PokeStorageMain(u8 taskId)
     case MSTATE_ERROR_HAS_MAIL:
         PlaySE(SE_FAILURE);
         PrintMessage(MSG_PLEASE_REMOVE_MAIL);
+        sStorage->state = MSTATE_WAIT_ERROR_MSG;
+        break;
+    case MSTATE_ERROR_CANT_WITHDRAW_EGG:
+        PlaySE(SE_FAILURE);
+        PrintMessage(MSG_CANT_WITHDRAW_EGG);
         sStorage->state = MSTATE_WAIT_ERROR_MSG;
         break;
     case MSTATE_WAIT_ERROR_MSG:
@@ -2616,9 +2639,17 @@ static void Task_OnSelectedMon(u8 taskId)
             }
             break;
         case MENU_WITHDRAW:
-            PlaySE(SE_SELECT);
-            ClearBottomWindow();
-            SetPokeStorageTask(Task_WithdrawMon);
+            // Helix: Eggs cannot leave the PC
+            if (sStorage->displayMonIsEgg)
+            {
+                sStorage->state = 7;
+            }
+            else
+            {
+                PlaySE(SE_SELECT);
+                ClearBottomWindow();
+                SetPokeStorageTask(Task_WithdrawMon);
+            }
             break;
         case MENU_STORE:
             if (IsRemovingLastPartyMon())
@@ -2662,6 +2693,10 @@ static void Task_OnSelectedMon(u8 taskId)
         case MENU_MARK:
             PlaySE(SE_SELECT);
             SetPokeStorageTask(Task_ShowMarkMenu);
+            break;
+        case MENU_NICKNAME:
+            PlaySE(SE_SELECT);
+            SetPokeStorageTask(Task_NicknameMon);
             break;
         case MENU_TAKE:
             PlaySE(SE_SELECT);
@@ -2728,6 +2763,12 @@ static void Task_OnSelectedMon(u8 taskId)
             ClearBottomWindow();
             SetPokeStorageTask(Task_PokeStorageMain);
         }
+        break;
+    // Helix: Egg can't leave PC
+    case 7:
+        PlaySE(SE_FAILURE);
+        PrintMessage(MSG_CANT_WITHDRAW_EGG);
+        sStorage->state = 6;
         break;
     }
 }
@@ -3586,6 +3627,43 @@ static void Task_ShowMonSummary(u8 taskId)
     }
 }
 
+// Helix: Callback after naming screen — applies the new nickname and returns to PC
+static void CB2_ReturnFromNicknameScreen(void)
+{
+    SetBoxMonData(GetSelectedBoxMonFromPcOrParty(), MON_DATA_NICKNAME, gStringVar2);
+    CB2_ReturnToPokeStorage();
+}
+
+static void Task_NicknameMon(u8 taskId)
+{
+    switch (sStorage->state)
+    {
+    case 0:
+        // Store the mon's location so GetSelectedBoxMonFromPcOrParty can find it
+        if (sInPartyMenu)
+        {
+            gSpecialVar_0x8004 = sCursorPosition;
+        }
+        else
+        {
+            gSpecialVar_0x8004 = PC_MON_CHOSEN;
+            gSpecialVar_MonBoxPos = sCursorPosition;
+            gSpecialVar_MonBoxId = StorageGetCurrentBox();
+        }
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+        sStorage->state++;
+        break;
+    case 1:
+        if (!UpdatePaletteFade())
+        {
+            sWhichToReshow = SCREEN_CHANGE_NICKNAME - 1;
+            sStorage->screenChangeType = SCREEN_CHANGE_NICKNAME;
+            SetPokeStorageTask(Task_ChangeScreen);
+        }
+        break;
+    }
+}
+
 static void Task_GiveItemFromBag(u8 taskId)
 {
     switch (sStorage->state)
@@ -3786,6 +3864,10 @@ static void Task_ChangeScreen(u8 taskId)
     case SCREEN_CHANGE_ITEM_FROM_BAG:
         FreePokeStorageData();
         GoToBagMenu(ITEMMENULOCATION_PCBOX, 0, CB2_ReturnToPokeStorage);
+        break;
+    case SCREEN_CHANGE_NICKNAME:
+        FreePokeStorageData();
+        ChangePokemonNicknameWithCallback(CB2_ReturnFromNicknameScreen);
         break;
     }
 
@@ -4206,8 +4288,7 @@ static void SetPartySlotTilemaps(void)
 {
     u8 i;
 
-    // Skips first party slot, it should always be drawn
-    // as if it has a Pokémon in it
+    // Helix: Also update slot 0 — party can be empty
     for (i = 1; i < PARTY_SIZE; i++)
     {
         s32 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES);
@@ -4748,8 +4829,17 @@ static void CreatePartyMonsSprites(bool8 visible)
     bool32 isEgg = GetMonData(&gPlayerParty[0], MON_DATA_IS_EGG);
     u32 personality = GetMonData(&gPlayerParty[0], MON_DATA_PERSONALITY);
 
-    sStorage->partySprites[0] = CreateMonIconSprite(species, personality, 104, 64, 1, 12, isEgg);
-    count = 1;
+    // Helix: Handle empty party — don't create a sprite for slot 0 if empty
+    if (species != SPECIES_NONE)
+    {
+        sStorage->partySprites[0] = CreateMonIconSprite(species, personality, 104, 64, 1, 12, isEgg);
+        count = 1;
+    }
+    else
+    {
+        sStorage->partySprites[0] = NULL;
+        count = 0;
+    }
     for (i = 1; i < PARTY_SIZE; i++)
     {
         species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES);
@@ -6846,16 +6936,19 @@ static void SetMonMarkings(u8 markings)
 
 static bool8 IsRemovingLastPartyMon(void)
 {
-    if (sCursorArea == CURSOR_AREA_IN_PARTY && !sIsMonBeingMoved && CountPartyAliveNonEggMonsExcept(sCursorPosition) == 0)
-        return TRUE;
-    else
-        return FALSE;
+    // Helix: Allow depositing/moving all party Pokémon.
+    // The island population lives in PC boxes; an empty party is valid.
+    return FALSE;
 }
 
 static bool8 CanPlaceMon(void)
 {
     if (sIsMonBeingMoved)
     {
+        // Helix: Eggs cannot be placed in the party
+        if (sCursorArea == CURSOR_AREA_IN_PARTY
+            && GetMonData(&sStorage->movingMon, MON_DATA_IS_EGG))
+            return FALSE;
         if (sCursorArea == CURSOR_AREA_IN_PARTY && GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_SPECIES) == SPECIES_NONE)
             return TRUE;
         else if (sCursorArea == CURSOR_AREA_IN_BOX && GetBoxMonDataAt(StorageGetCurrentBox(), sCursorPosition, MON_DATA_SPECIES_OR_EGG) == SPECIES_NONE)
@@ -6868,13 +6961,13 @@ static bool8 CanPlaceMon(void)
 
 static bool8 CanShiftMon(void)
 {
+    // Helix: Removed last-party-mon check. Shifting is always allowed
+    // as long as a mon is being moved — except eggs can't enter the party.
     if (sIsMonBeingMoved)
     {
-        if (sCursorArea == CURSOR_AREA_IN_PARTY && CountPartyAliveNonEggMonsExcept(sCursorPosition) == 0)
-        {
-            if (sStorage->displayMonIsEgg || GetMonData(&sStorage->movingMon, MON_DATA_HP) == 0)
-                return FALSE;
-        }
+        if (sCursorArea == CURSOR_AREA_IN_PARTY
+            && GetMonData(&sStorage->movingMon, MON_DATA_IS_EGG))
+            return FALSE;
         return TRUE;
     }
     return FALSE;
@@ -7745,6 +7838,10 @@ static bool8 SetMenuTexts_Mon(void)
     case OPTION_MOVE_MONS:
         if (sIsMonBeingMoved)
         {
+            // Helix: If holding an egg and cursor is in party, block place/shift
+            if (sCursorArea == CURSOR_AREA_IN_PARTY
+                && GetMonData(&sStorage->movingMon, MON_DATA_IS_EGG))
+                return FALSE;
             if (species != SPECIES_NONE)
                 SetMenuText(MENU_SHIFT);
             else
@@ -7770,6 +7867,9 @@ static bool8 SetMenuTexts_Mon(void)
     }
 
     SetMenuText(MENU_SUMMARY);
+    // Helix: Allow renaming Pokémon from the PC
+    if (!sStorage->displayMonIsEgg)
+        SetMenuText(MENU_NICKNAME);
     if (sStorage->boxOption == OPTION_MOVE_MONS)
     {
         if (sCursorArea == CURSOR_AREA_IN_BOX)
@@ -8081,6 +8181,7 @@ static const u8 *const sMenuTexts[] =
     [MENU_MACHINE]    = COMPOUND_STRING("MACHINE"),
     [MENU_SIMPLE]     = COMPOUND_STRING("SIMPLE"),
     [MENU_SELECT]     = COMPOUND_STRING("SELECT"),
+    [MENU_NICKNAME]   = COMPOUND_STRING("NICKNAME"),
 };
 
 static void SetMenuText(u8 textId)

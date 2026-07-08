@@ -29,6 +29,8 @@
 #include "follower_npc.h"
 #include "gpu_regs.h"
 #include "heal_location.h"
+#include "helix.h"
+#include "helix_run.h"
 #include "io_reg.h"
 #include "item.h"
 #include "item_icon.h"
@@ -389,6 +391,16 @@ static void (*const sMovementStatusHandler[])(struct LinkPlayerObjectEvent *, st
 // code
 void DoWhiteOut(void)
 {
+    // Helix: blacking out during a run discards it and returns the player
+    // (with an empty party) to the island bed.
+    if (HelixTryHandleRunBlackout())
+    {
+        Overworld_ResetStateAfterWhiteOut();
+        SetWarpDestination(MAP_GROUP(MAP_HELIX_ISLAND), MAP_NUM(MAP_HELIX_ISLAND), WARP_ID_NONE, 34, 26);
+        WarpIntoMap();
+        return;
+    }
+
     RunScriptImmediately(EventScript_WhiteOut);
     HealPlayerParty();
     Overworld_ResetStateAfterWhiteOut();
@@ -1881,14 +1893,12 @@ void CB2_NewGame(void)
     StopMapMusic();
     ResetSafariZoneFlag_();
     NewGameInitData();
+    HelixApplyNewGameState();
     ResetInitialPlayerAvatarState();
     PlayTimeCounter_Start();
     ScriptContext_Init();
     UnlockPlayerFieldControls();
-    if (IS_FRLG)
-        gFieldCallback = FieldCB_WarpExitFadeFromBlack;
-    else
-        gFieldCallback = ExecuteTruckSequence;
+    gFieldCallback = FieldCB_WarpExitFadeFromBlack;
     gFieldCallback2 = NULL;
     DoMapLoadLoop(&gMain.state);
     SetFieldVBlankCallback();

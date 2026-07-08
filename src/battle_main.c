@@ -30,6 +30,7 @@
 #include "follower_npc.h"
 #include "graphics.h"
 #include "gpu_regs.h"
+#include "helix_run.h"
 #include "international_string_util.h"
 #include "item.h"
 #include "link.h"
@@ -600,6 +601,8 @@ static void CB2_InitBattleInternal(void)
             CreateNPCTrainerParty(&gEnemyParty[0], TRAINER_BATTLE_PARAM.opponentA, TRUE);
             if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS && !BATTLE_TWO_VS_ONE_OPPONENT)
                 CreateNPCTrainerParty(&gEnemyParty[PARTY_SIZE / 2], TRAINER_BATTLE_PARAM.opponentB, FALSE);
+            // Helix: random cave trainers re-roll their mon from the cave pool
+            HelixMaybeRandomizeRunTrainerMon(&gEnemyParty[0], TRAINER_BATTLE_PARAM.opponentA);
             SetWildMonHeldItem();
             CalculateEnemyPartyCount();
         }

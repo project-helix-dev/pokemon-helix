@@ -21,6 +21,7 @@
 #include "fishing.h"
 #include "fldeff.h"
 #include "follower_npc.h"
+#include "helix_run.h"
 #include "item.h"
 #include "item_menu.h"
 #include "item_use.h"
@@ -1152,6 +1153,10 @@ static u32 GetBallThrowableState(void)
         return BALL_THROW_UNABLE_SEMI_INVULNERABLE;
     else if (FlagGet(B_FLAG_NO_CATCHING) || !IsAllowedToUseBag())
         return BALL_THROW_UNABLE_DISABLED_FLAG;
+    // Helix: during runs, only mons matching the player's island type may be caught
+    else if (HelixIsRunActive()
+          && !HelixSpeciesMatchesPlayerType(GetMonData(GetBattlerMon(GetCatchingBattler()), MON_DATA_SPECIES)))
+        return BALL_THROW_UNABLE_HELIX_TYPE;
 
     return BALL_THROW_ABLE;
 }
@@ -1164,6 +1169,7 @@ bool32 CanThrowBall(void)
 static const u8 sText_CantThrowPokeBall_TwoMons[] = _("Cannot throw a ball!\nThere are two Pokémon out there!\p");
 static const u8 sText_CantThrowPokeBall_SemiInvulnerable[] = _("Cannot throw a ball!\nThere's no Pokémon in sight!\p");
 static const u8 sText_CantThrowPokeBall_Disabled[] = _("POKé BALLS cannot be used\nright now!\p");
+static const u8 sText_CantThrowPokeBall_HelixType[] = _("This POKéMON doesn't resonate with\nyour island's type.\p");
 void ItemUseInBattle_PokeBall(u8 taskId)
 {
     switch (GetBallThrowableState())
@@ -1199,6 +1205,9 @@ void ItemUseInBattle_PokeBall(u8 taskId)
             DisplayItemMessage(taskId, FONT_NORMAL, sText_CantThrowPokeBall_Disabled, CloseItemMessage);
         else
             DisplayItemMessageInBattlePyramid(taskId, sText_CantThrowPokeBall_Disabled, Task_CloseBattlePyramidBagMessage);
+        break;
+    case BALL_THROW_UNABLE_HELIX_TYPE:
+        DisplayItemMessage(taskId, FONT_NORMAL, sText_CantThrowPokeBall_HelixType, CloseItemMessage);
         break;
     }
 }

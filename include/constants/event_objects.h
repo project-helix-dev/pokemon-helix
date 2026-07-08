@@ -413,6 +413,11 @@
 #define OBJ_EVENT_GFX_CUTTABLE_TREE_FRLG         386
 #define OBJ_EVENT_GFX_BREAKABLE_ROCK_FRLG        387
 
+// Helix stray ball variants
+#define OBJ_EVENT_GFX_GREAT_BALL                  388
+#define OBJ_EVENT_GFX_ULTRA_BALL                  389
+#define OBJ_EVENT_GFX_MASTER_BALL                 390
+
 // FRLG equivalents
 
 // #define OBJ_EVENT_GFX_MEW OBJ_EVENT_GFX_NINJA_BOY
@@ -423,7 +428,7 @@
 // NOTE: The maximum amount of object events has been expanded from 255 to 65535.
 // Since dynamic graphics ids still require at least 16 free values, the actual limit
 // is 65519, but even considering follower Pokémon, this should be more than enough :)
-#define NUM_OBJ_EVENT_GFX                        388
+#define NUM_OBJ_EVENT_GFX                        391
 
 
 // These are dynamic object gfx ids.
