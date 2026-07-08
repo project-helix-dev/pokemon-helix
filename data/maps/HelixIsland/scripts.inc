@@ -396,6 +396,39 @@ HelixIsland_EventScript_StrayHideTutorial:
 	goto HelixIsland_EventScript_TutorialPostBall
 
 @ ══════════════════════════════════════════════════════════════════════
+@ DEV KIT NPC (testing only — remove before release)
+@ ══════════════════════════════════════════════════════════════════════
+HelixIsland_EventScript_DevKit::
+	lock
+	faceplayer
+	msgbox HelixIsland_Text_DevKitOffer, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, NO, HelixIsland_EventScript_DevKitDecline
+	givemon SPECIES_NUZLEAF, 100, move1=MOVE_FALSE_SWIPE, move2=MOVE_LEAF_BLADE
+	goto_if_eq VAR_RESULT, MON_GIVEN_TO_PARTY, HelixIsland_EventScript_DevKitParty
+	goto_if_eq VAR_RESULT, MON_GIVEN_TO_PC, HelixIsland_EventScript_DevKitPC
+	@ Party and PC both full
+	msgbox HelixIsland_Text_DevKitNoRoom, MSGBOX_DEFAULT
+	release
+	end
+
+HelixIsland_EventScript_DevKitParty:
+	playse SE_SUCCESS
+	msgbox HelixIsland_Text_DevKitParty, MSGBOX_DEFAULT
+	release
+	end
+
+HelixIsland_EventScript_DevKitPC:
+	playse SE_SUCCESS
+	msgbox HelixIsland_Text_DevKitPC, MSGBOX_DEFAULT
+	release
+	end
+
+HelixIsland_EventScript_DevKitDecline:
+	msgbox HelixIsland_Text_DevKitDecline, MSGBOX_DEFAULT
+	release
+	end
+
+@ ══════════════════════════════════════════════════════════════════════
 @ MOVEMENT DATA
 @ ══════════════════════════════════════════════════════════════════════
 
@@ -3197,4 +3230,18 @@ HelixIsland_Text_BoatYes_Fairy:
 HelixIsland_Text_BoatNo_Fairy:
 	.string "That's okay.\n"
 	.string "We'll go when you're ready.$"
+
+HelixIsland_Text_DevKitOffer:
+	.string "DEV KIT: Want a level 100 NUZLEAF\n"
+	.string "with FALSE SWIPE and LEAF BLADE?$"
+HelixIsland_Text_DevKitParty:
+	.string "DEV KIT: NUZLEAF was added\n"
+	.string "to your party.$"
+HelixIsland_Text_DevKitPC:
+	.string "DEV KIT: Your party is full.\n"
+	.string "NUZLEAF was sent to the PC.$"
+HelixIsland_Text_DevKitNoRoom:
+	.string "DEV KIT: No room in party or PC.$"
+HelixIsland_Text_DevKitDecline:
+	.string "DEV KIT: Come back anytime.$"
 
