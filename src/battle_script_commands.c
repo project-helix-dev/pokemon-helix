@@ -51,7 +51,7 @@
 #include "pokenav.h"
 #include "menu_specialized.h"
 #include "data.h"
-#include "generational_changes.h"
+#include "config_changes.h"
 #include "helix_run.h"
 #include "move.h"
 #include "constants/abilities.h"
