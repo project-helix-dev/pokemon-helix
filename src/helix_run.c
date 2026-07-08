@@ -621,9 +621,11 @@ void HelixSpecial_BufferRunSummary(void)
 void HelixSpecial_CompleteCavesRun(void)
 {
     u32 i;
+    u32 money = VarGet(VAR_HELIX_RUN_MONEY_EARNED);
+    u32 food = VarGet(VAR_HELIX_RUN_FOOD_EARNED);
 
-    AddMoney(&gSaveBlock1Ptr->money, VarGet(VAR_HELIX_RUN_MONEY_EARNED));
-    VarSet(VAR_HELIX_FOOD, VarGet(VAR_HELIX_FOOD) + VarGet(VAR_HELIX_RUN_FOOD_EARNED));
+    AddMoney(&gSaveBlock1Ptr->money, money);
+    VarSet(VAR_HELIX_FOOD, VarGet(VAR_HELIX_FOOD) + food);
 
     for (i = 0; i < PARTY_SIZE; i++)
     {
@@ -633,7 +635,11 @@ void HelixSpecial_CompleteCavesRun(void)
 
     VarSet(VAR_HELIX_LAST_RUN_DAY, VarGet(VAR_HELIX_DAY_COUNT));
     ResetRunVars();
-    VarSet(VAR_HELIX_RUN_ACTIVE, HELIX_RUN_INACTIVE);
+    // Keep the earnings visible for the beach summary; the island's
+    // SUCCESS_RETURN script displays and then clears them.
+    VarSet(VAR_HELIX_RUN_MONEY_EARNED, money);
+    VarSet(VAR_HELIX_RUN_FOOD_EARNED, food);
+    VarSet(VAR_HELIX_RUN_ACTIVE, HELIX_RUN_SUCCESS_RETURN);
 }
 
 // Blackout during a run: lose everything unbanked and the whole party.

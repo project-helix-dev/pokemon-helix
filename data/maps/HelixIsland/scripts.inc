@@ -66,7 +66,23 @@ HelixIsland_OnTransition_End:
 HelixIsland_OnFrame:
 	map_script_2 VAR_HELIX_INTRO_STATE, 2, HelixIsland_EventScript_Tutorial
 	map_script_2 VAR_HELIX_RUN_ACTIVE, HELIX_RUN_BLACKOUT_RETURN, HelixIsland_EventScript_BlackoutReturn
+	map_script_2 VAR_HELIX_RUN_ACTIVE, HELIX_RUN_SUCCESS_RETURN, HelixIsland_EventScript_RunSuccessReturn
 	.2byte 0
+
+@ Run success: the player reappears on the beach next to the guide,
+@ who congratulates them and reports the expedition earnings.
+HelixIsland_EventScript_RunSuccessReturn::
+	lockall
+	setvar VAR_HELIX_RUN_ACTIVE, HELIX_RUN_INACTIVE
+	applymovement OBJ_EVENT_ID_PLAYER, Movement_FaceUp
+	waitmovement 0
+	msgbox HelixIsland_Text_RunSuccessRest, MSGBOX_DEFAULT
+	special HelixSpecial_BufferRunSummary
+	msgbox HelixIsland_Text_RunSuccessSummary, MSGBOX_DEFAULT
+	setvar VAR_HELIX_RUN_MONEY_EARNED, 0
+	setvar VAR_HELIX_RUN_FOOD_EARNED, 0
+	releaseall
+	end
 
 @ Run blackout: the player was carried back to the island (see DoWhiteOut)
 HelixIsland_EventScript_BlackoutReturn::
@@ -222,9 +238,17 @@ HelixIsland_EventScript_GuidePostTutorial::
 	end
 
 HelixIsland_EventScript_GuideBoatPrompt::
+	@ One expedition per day: refuse the boat until tomorrow
+	compare VAR_HELIX_LAST_RUN_DAY, VAR_HELIX_DAY_COUNT
+	goto_if_eq HelixIsland_EventScript_GuideRanToday
 	call HelixIsland_GuideMsg_ReadyPrompt
 	goto_if_eq VAR_RESULT, YES, HelixIsland_EventScript_GuideBoatYes
 	call HelixIsland_GuideMsg_BoatNo
+	release
+	end
+
+HelixIsland_EventScript_GuideRanToday::
+	msgbox HelixIsland_Text_GuideRanToday, MSGBOX_DEFAULT
 	release
 	end
 
@@ -458,6 +482,10 @@ Movement_EmotionExclamation:
 
 Movement_FaceRight:
 	face_right
+	step_end
+
+Movement_FaceUp:
+	face_up
 	step_end
 
 Movement_FaceLeft:
@@ -3253,4 +3281,15 @@ HelixIsland_Text_DevKitNoRoom:
 	.string "DEV KIT: No room in party or PC.$"
 HelixIsland_Text_DevKitDecline:
 	.string "DEV KIT: Come back anytime.$"
+
+HelixIsland_Text_RunSuccessRest:
+	.string "Nice job out there!\n"
+	.string "Now get some rest.$"
+HelixIsland_Text_RunSuccessSummary:
+	.string "Food gathered: {STR_VAR_2}.\n"
+	.string "¥ gathered: {STR_VAR_1}.$"
+HelixIsland_Text_GuideRanToday:
+	.string "You've done enough for today.\p"
+	.string "Rest up. We'll set out again\n"
+	.string "tomorrow.$"
 

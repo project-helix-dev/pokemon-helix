@@ -15,6 +15,7 @@
 #include "config_changes.h"
 #include "party_menu.h"
 #include "pokemon.h"
+#include "helix_run.h"
 #include "international_string_util.h"
 #include "item.h"
 #include "util.h"
@@ -11031,5 +11032,8 @@ void SetValuesOnFaint(enum BattlerId battler)
             gBattleResults.opponentFaintCounter++;
         gBattleResults.lastOpponentSpecies = GetMonData(GetBattlerMon(battler), MON_DATA_SPECIES);
         gSideTimers[B_SIDE_OPPONENT].retaliateTimer = 2;
+        // Helix: record which party mon landed the final blow (IV rewards)
+        HelixOnOpponentFainted(gBattlerPartyIndexes[gBattlerAttacker],
+                               IsOnPlayerSide(gBattlerAttacker));
     }
 }

@@ -8,6 +8,7 @@
 #define HELIX_RUN_INACTIVE        0
 #define HELIX_RUN_IN_PROGRESS     1
 #define HELIX_RUN_BLACKOUT_RETURN 2 // blacked out; island message pending
+#define HELIX_RUN_SUCCESS_RETURN  3 // run won; beach summary pending
 
 // Room types (VAR_HELIX_RUN_ROOM_TYPE)
 #define HELIX_RUN_ROOM_NONE          0
