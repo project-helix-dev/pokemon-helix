@@ -55,7 +55,7 @@ HelixCaveRoomTrainer_EventScript_PostBattle:
 	special HelixSpecial_OnRunTrainerWon
 	copyvar VAR_0x8009, VAR_RESULT
 	call HelixRun_EventScript_ReportLostMons
-	call HelixRun_EventScript_TryIVReward
+	@ IV reward is granted inside the battle (BS_HelixTryEndBattleRewards)
 	setvar VAR_HELIX_RUN_ROOM_COMPLETE, 1
 	msgbox HelixRun_Text_PathOpen, MSGBOX_DEFAULT
 	releaseall

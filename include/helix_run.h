@@ -71,4 +71,10 @@ void HelixMaybeRandomizeRunTrainerMon(struct Pokemon *party, u16 trainerNum);
 bool32 HelixTryHandleRunBlackout(void);
 void HelixSetFixedExp(struct Pokemon *mon);
 
+// ── In-battle reward helpers (used by BS_Helix* natives) ───────────────
+u32 HelixBattleRollFood(void);
+bool32 HelixBattlePrepareIVPrompt(void);
+const u8 *HelixBattleGetRewardStatName(u32 slot);
+void HelixBattleApplyIVChoice(u32 selection);
+
 #endif // GUARD_HELIX_RUN_H

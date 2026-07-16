@@ -2886,6 +2886,27 @@ BattleScript_LocalBattleWonReward::
 BattleScript_PayDayMoneyAndPickUpItems::
 	givepaydaymoney
 	pickup
+	@ Helix: in-battle food + IV rewards during expedition runs
+	callnative BS_HelixTryEndBattleRewards
+	end2
+
+@ Helix: wild-room food gathered, shown in the battle view
+BattleScript_HelixFoodGained::
+	printstring STRINGID_HELIXFOODGAINED
+	waitmessage B_WAIT_TIME_LONG
+	callnative BS_HelixTryIVPrompt
+	end2
+
+@ Helix: IV reward prompt — 3-stat menu in the battle view
+BattleScript_HelixIVPrompt::
+	printstring STRINGID_HELIXMONGREW
+	waitmessage B_WAIT_TIME_LONG
+	printstring STRINGID_HELIXCHOOSESTAT
+	waitmessage B_WAIT_TIME_SHORT
+	callnative BS_HelixIVMenu
+	playse SE_EXP_MAX
+	printstring STRINGID_HELIXSTATINCREASED
+	waitmessage B_WAIT_TIME_LONG
 	end2
 
 BattleScript_RivalBattleLost::

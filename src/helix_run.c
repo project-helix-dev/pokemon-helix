@@ -2,6 +2,7 @@
 #include "helix.h"
 #include "helix_run.h"
 #include "battle.h"
+#include "battle_message.h"
 #include "event_data.h"
 #include "main.h"
 #include "money.h"
@@ -411,21 +412,16 @@ void HelixAddRunMoney(u32 amount)
 
 // Called from CB2_EndWildBattle when the player was not defeated.
 // Updates wild-room counters and signals the room's ON_FRAME script through
-// VAR_TEMP_1 (battle resolved), VAR_TEMP_2 (food gained), VAR_TEMP_3 (mons lost).
+// VAR_TEMP_1 (battle resolved), VAR_TEMP_3 (mons lost).
+// Food is rolled and reported inside the battle (BS_HelixTryEndBattleRewards).
 void HelixOnWildBattleEnd(void)
 {
-    u32 food = 0;
-
     if (!HelixIsRunActive() || !PlayerIsOnMap(MAP_HELIX_CAVE_ROOM_WILD))
         return;
 
     switch (gBattleOutcome)
     {
     case B_OUTCOME_WON:
-        food = HELIX_RUN_WILD_FOOD_MIN
-             + Random() % (HELIX_RUN_WILD_FOOD_MAX - HELIX_RUN_WILD_FOOD_MIN + 1);
-        VarSet(VAR_HELIX_RUN_FOOD_EARNED, VarGet(VAR_HELIX_RUN_FOOD_EARNED) + food);
-        break;
     case B_OUTCOME_CAUGHT:
         // Capture counts toward completion; catch itself was handled in battle.
         break;
@@ -440,7 +436,6 @@ void HelixOnWildBattleEnd(void)
 
     VarSet(VAR_HELIX_RUN_WILD_DONE, VarGet(VAR_HELIX_RUN_WILD_DONE) + 1);
     VarSet(VAR_TEMP_1, 1);
-    VarSet(VAR_TEMP_2, food);
     VarSet(VAR_TEMP_3, RemoveFaintedRunMons());
 }
 
@@ -596,6 +591,96 @@ void HelixSpecial_ApplyIVRewardChoice(void)
 
     // One reward per room
     VarSet(VAR_HELIX_RUN_LAST_KO, 0);
+}
+
+// ── In-battle rewards (called from battle-end scripts via natives) ──────
+
+// Rolls the wild-room food reward for a won run battle and banks it into the
+// run total. Returns 0 when no food applies (not a run wild-room victory).
+u32 HelixBattleRollFood(void)
+{
+    u32 food;
+
+    if (!HelixIsRunActive() || gBattleOutcome != B_OUTCOME_WON
+     || (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+     || !PlayerIsOnMap(MAP_HELIX_CAVE_ROOM_WILD))
+        return 0;
+
+    food = HELIX_RUN_WILD_FOOD_MIN
+         + Random() % (HELIX_RUN_WILD_FOOD_MAX - HELIX_RUN_WILD_FOOD_MIN + 1);
+    VarSet(VAR_HELIX_RUN_FOOD_EARNED, VarGet(VAR_HELIX_RUN_FOOD_EARNED) + food);
+    return food;
+}
+
+// TRUE if this won battle should offer the IV reward menu:
+// - trainer battles during a run always qualify;
+// - wild battles qualify only when they complete the wild room's objective
+//   with no fled encounters (the wild-done counter has not been incremented
+//   for the current battle yet — that happens in HelixOnWildBattleEnd).
+static bool32 HelixBattleIVPromptEligible(void)
+{
+    if (!HelixIsRunActive() || gBattleOutcome != B_OUTCOME_WON
+     || GetIVRewardRecipient() == NULL)
+        return FALSE;
+
+    if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+        return TRUE;
+
+    if (!PlayerIsOnMap(MAP_HELIX_CAVE_ROOM_WILD))
+        return FALSE;
+    if (VarGet(VAR_HELIX_RUN_ROOM_COMPLETE) != 0 || VarGet(VAR_HELIX_RUN_WILD_FLED) != 0)
+        return FALSE;
+    return VarGet(VAR_HELIX_RUN_WILD_DONE) + 1 >= VarGet(VAR_HELIX_RUN_WILD_TARGET);
+}
+
+// If an IV reward should be offered, rolls the 3 stat choices and buffers the
+// recipient's nickname for STRINGID_HELIXMONGREW. Returns TRUE when eligible.
+bool32 HelixBattlePrepareIVPrompt(void)
+{
+    struct Pokemon *mon;
+
+    if (!HelixBattleIVPromptEligible())
+        return FALSE;
+
+    HelixSpecial_PrepareIVRewardChoices();
+    mon = GetIVRewardRecipient();
+    PREPARE_MON_NICK_BUFFER(gBattleTextBuff1, 0, ((u32)(mon - gPlayerParty)));
+    return TRUE;
+}
+
+// Stat name for menu slot 0-2 (rolled by HelixBattlePrepareIVPrompt).
+const u8 *HelixBattleGetRewardStatName(u32 slot)
+{
+    static const u16 sSlotVars[3] =
+    {
+        VAR_HELIX_RUN_REWARD_STAT_1,
+        VAR_HELIX_RUN_REWARD_STAT_2,
+        VAR_HELIX_RUN_REWARD_STAT_3,
+    };
+    u32 statId;
+
+    if (slot >= ARRAY_COUNT(sSlotVars))
+        slot = 0;
+    statId = VarGet(sSlotVars[slot]);
+    if (statId >= HELIX_STAT_COUNT)
+        statId = HELIX_STAT_HP;
+    return sStatNames[statId];
+}
+
+// Applies the menu selection (0-2) and buffers nickname + stat name for
+// STRINGID_HELIXSTATINCREASED.
+void HelixBattleApplyIVChoice(u32 selection)
+{
+    struct Pokemon *mon = GetIVRewardRecipient();
+
+    if (mon == NULL)
+        return;
+
+    PREPARE_MON_NICK_BUFFER(gBattleTextBuff1, 0, ((u32)(mon - gPlayerParty)));
+    StringCopy(gBattleTextBuff2, HelixBattleGetRewardStatName(selection));
+
+    gSpecialVar_Result = selection;
+    HelixSpecial_ApplyIVRewardChoice(); // applies the IV and clears the last-KO slot
 }
 
 // ── Run completion / blackout ───────────────────────────────────────────

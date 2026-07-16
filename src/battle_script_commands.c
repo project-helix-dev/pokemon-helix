@@ -49,6 +49,7 @@
 #include "field_specials.h"
 #include "pokemon_summary_screen.h"
 #include "pokenav.h"
+#include "menu.h"
 #include "menu_specialized.h"
 #include "data.h"
 #include "config_changes.h"
@@ -13991,5 +13992,142 @@ void BS_RestoreStatChangeQueue(void)
     gSpecialStatuses[gBattlerAttacker].statStageAmount = gSpecialStatuses[gBattlerAttacker].statStageAmount2;
     ClearOtherStatChangeValues(gBattlerAttacker);
     gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Helix: end-of-battle expedition rewards (food + IV prompt), shown in the
+// battle view before the battle closes. See src/helix_run.c for the logic.
+// ═══════════════════════════════════════════════════════════════════════
+
+// Menu box frame coordinates (tile units, HandleBattleWindow format)
+#define HELIX_STATBOX_X_Y 20, 5, 29, 12
+
+static const struct WindowTemplate sHelixStatMenuWindowTemplate =
+{
+    .bg = 0,
+    .tilemapLeft = 22,
+    .tilemapTop = 6,
+    .width = 7,
+    .height = 6,
+    .paletteNum = 5,
+    .baseBlock = 0x0350,
+};
+
+static EWRAM_DATA u8 sHelixStatMenuWindowId = 0;
+static EWRAM_DATA u8 sHelixStatMenuState = 0;
+
+static void HelixStatMenuCursorAt(u8 pos, bool32 create)
+{
+    u16 src[2];
+
+    if (create)
+    {
+        src[0] = 1;
+        src[1] = 2;
+    }
+    else
+    {
+        src[0] = 0x1016;
+        src[1] = 0x1016;
+    }
+    CopyToBgTilemapBufferRect_ChangePalette(0, src, 21, 6 + 2 * pos, 1, 2, 0x11);
+    CopyBgTilemapBufferToVram(0);
+}
+
+static void HelixStatMenuShow(void)
+{
+    static const u8 sTextColors[3] = {14, 13, 15}; // bg, fg, shadow (battle window palette)
+    u32 i;
+
+    HandleBattleWindow(HELIX_STATBOX_X_Y, 0);
+    sHelixStatMenuWindowId = AddWindow(&sHelixStatMenuWindowTemplate);
+    PutWindowTilemap(sHelixStatMenuWindowId);
+    FillWindowPixelBuffer(sHelixStatMenuWindowId, PIXEL_FILL(14));
+    for (i = 0; i < 3; i++)
+        AddTextPrinterParameterized3(sHelixStatMenuWindowId, FONT_NORMAL, 0, 16 * i + 1,
+                                     sTextColors, TEXT_SKIP_DRAW, HelixBattleGetRewardStatName(i));
+    CopyWindowToVram(sHelixStatMenuWindowId, COPYWIN_FULL);
+}
+
+static void HelixStatMenuDestroy(void)
+{
+    ClearWindowTilemap(sHelixStatMenuWindowId);
+    RemoveWindow(sHelixStatMenuWindowId);
+    HandleBattleWindow(HELIX_STATBOX_X_Y, WINDOW_CLEAR);
+    CopyBgTilemapBufferToVram(0);
+}
+
+// Decides which reward flow (if any) follows givepaydaymoney/pickup.
+void BS_HelixTryEndBattleRewards(void)
+{
+    NATIVE_ARGS();
+    u32 food = HelixBattleRollFood();
+
+    if (food != 0)
+    {
+        PREPARE_BYTE_NUMBER_BUFFER(gBattleTextBuff1, 3, food);
+        gBattlescriptCurrInstr = BattleScript_HelixFoodGained;
+    }
+    else if (HelixBattlePrepareIVPrompt())
+    {
+        gBattlescriptCurrInstr = BattleScript_HelixIVPrompt;
+    }
+    else
+    {
+        gBattlescriptCurrInstr = cmd->nextInstr;
+    }
+}
+
+// After the food message: chain into the IV prompt when eligible.
+void BS_HelixTryIVPrompt(void)
+{
+    NATIVE_ARGS();
+
+    if (HelixBattlePrepareIVPrompt())
+        gBattlescriptCurrInstr = BattleScript_HelixIVPrompt;
+    else
+        gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+// 3-option stat menu, modeled on Cmd_yesnobox. B is ignored — a stat must
+// be chosen. On confirm the IV is applied and the script continues to the
+// "increased!" message.
+void BS_HelixIVMenu(void)
+{
+    NATIVE_ARGS();
+
+    switch (sHelixStatMenuState)
+    {
+    case 0:
+        HelixStatMenuShow();
+        gBattleCommunication[CURSOR_POSITION] = 0;
+        HelixStatMenuCursorAt(0, TRUE);
+        sHelixStatMenuState++;
+        break;
+    case 1:
+        if (JOY_NEW(DPAD_UP) && gBattleCommunication[CURSOR_POSITION] != 0)
+        {
+            PlaySE(SE_SELECT);
+            HelixStatMenuCursorAt(gBattleCommunication[CURSOR_POSITION], FALSE);
+            gBattleCommunication[CURSOR_POSITION]--;
+            HelixStatMenuCursorAt(gBattleCommunication[CURSOR_POSITION], TRUE);
+        }
+        if (JOY_NEW(DPAD_DOWN) && gBattleCommunication[CURSOR_POSITION] < 2)
+        {
+            PlaySE(SE_SELECT);
+            HelixStatMenuCursorAt(gBattleCommunication[CURSOR_POSITION], FALSE);
+            gBattleCommunication[CURSOR_POSITION]++;
+            HelixStatMenuCursorAt(gBattleCommunication[CURSOR_POSITION], TRUE);
+        }
+        if (JOY_NEW(A_BUTTON))
+        {
+            PlaySE(SE_SELECT);
+            HelixBattleApplyIVChoice(gBattleCommunication[CURSOR_POSITION]);
+            HelixStatMenuDestroy();
+            sHelixStatMenuState = 0;
+            gBattlescriptCurrInstr = cmd->nextInstr;
+        }
+        break;
+    }
 }
 

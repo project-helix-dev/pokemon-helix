@@ -890,6 +890,10 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_LIGHTSCREENWOREOFF]                   = COMPOUND_STRING("{B_DEF_TEAM1} team's Light Screen wore off!"),
     [STRINGID_AURORAVEILWOREOFF]                    = COMPOUND_STRING("{B_DEF_TEAM1} team's Aurora Veil wore off!"),
     [STRINGID_STICKYWEBDISAPPEAREDFROMYOU]          = COMPOUND_STRING("The sticky web has disappeared from the ground around you!"),
+    [STRINGID_HELIXMONGREW]                         = COMPOUND_STRING("{B_BUFF1} grew from the battle!"),
+    [STRINGID_HELIXCHOOSESTAT]                      = COMPOUND_STRING("Choose a stat to increase."),
+    [STRINGID_HELIXSTATINCREASED]                   = COMPOUND_STRING("{B_BUFF1}'s {B_BUFF2} increased!"),
+    [STRINGID_HELIXFOODGAINED]                      = COMPOUND_STRING("You gathered {B_BUFF1} food!"),
 };
 
 const u16 gTrainerUsedItemStringIds[] =

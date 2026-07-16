@@ -111,25 +111,6 @@ HelixRun_EventScript_BossNoExitRight::
 	msgbox HelixRun_Text_OnlyRockBeyond, MSGBOX_DEFAULT
 	goto HelixRun_EventScript_BounceBack
 
-@ ── IV reward flow (use with `call`) ──────────────────────────────────
-@ Shows "{mon} grew" → 3-stat menu → applies the IV and reports it.
-@ Skips silently when no valid last-KO recipient exists.
-
-HelixRun_EventScript_TryIVReward::
-	special HelixSpecial_HasIVRewardRecipient
-	goto_if_eq VAR_RESULT, FALSE, HelixRun_EventScript_TryIVReward_None
-	special HelixSpecial_BufferIVRecipientName
-	msgbox HelixRun_Text_MonGrew, MSGBOX_DEFAULT
-	special HelixSpecial_PrepareIVRewardChoices
-	dynmultichoice 0, 0, TRUE, 3, 0, DYN_MULTICHOICE_CB_NONE, gStringVar1, gStringVar2, gStringVar3
-	special HelixSpecial_ApplyIVRewardChoice
-	playse SE_EXP_MAX
-	msgbox HelixRun_Text_StatRose, MSGBOX_DEFAULT
-	return
-
-HelixRun_EventScript_TryIVReward_None::
-	return
-
 @ ── Post-battle attrition report (use with `call`) ────────────────────
 @ VAR_0x8009 must hold the number of party mons lost.
 
@@ -177,13 +158,6 @@ HelixRun_Text_OnlyRockBeyond:
 HelixRun_Text_PathOpen:
 	.string "Somewhere in the cave, stone\n"
 	.string "grinds aside. The path is open!$"
-
-HelixRun_Text_MonGrew:
-	.string "{STR_VAR_1} grew from the battle!\p"
-	.string "What reward do you want?$"
-
-HelixRun_Text_StatRose:
-	.string "{STR_VAR_1}'s {STR_VAR_2} increased!$"
 
 HelixRun_Text_MonsLost:
 	.string "Some of your POKéMON were lost\n"
